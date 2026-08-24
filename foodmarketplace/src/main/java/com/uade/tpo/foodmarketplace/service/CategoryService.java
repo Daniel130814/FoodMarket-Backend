@@ -1,25 +1,15 @@
 package com.uade.tpo.foodmarketplace.service;
 
 import java.util.ArrayList;
-
-import org.springframework.stereotype.Service;
+import java.util.Optional;
 
 import com.uade.tpo.foodmarketplace.entity.CategoryRequest;
-import com.uade.tpo.foodmarketplace.repository.CategoryRepository;
 
-@Service
-public class CategoryService {
-    private final CategoryRepository categoryRepository = new CategoryRepository();
+public interface CategoryService {
 
-    public ArrayList<CategoryRequest> getCategories() {
-        return categoryRepository.getCategories();
-    }
+    ArrayList<CategoryRequest> getCategories();
 
-    public String getCategoryById(int categoryId) {
-        return categoryRepository.getCategoryById(categoryId);
-    }
+    Optional<CategoryRequest> getCategoryById(int categoryId);
 
-    public String createCategory(CategoryRequest categoryRequest) {
-        return categoryRepository.createCategory(categoryRequest);
-    }
+    String createCategory(CategoryRequest categoryRequest);
 }

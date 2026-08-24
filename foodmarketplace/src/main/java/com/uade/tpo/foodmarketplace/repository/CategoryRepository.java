@@ -1,9 +1,12 @@
 package com.uade.tpo.foodmarketplace.repository;
 
 import java.util.ArrayList;
+import java.util.Optional;
+import org.springframework.stereotype.Repository;
 import com.uade.tpo.foodmarketplace.entity.CategoryRequest;
 import java.util.Arrays;
 
+@Repository
 public class CategoryRepository {
     public ArrayList<CategoryRequest> categories = new ArrayList<CategoryRequest>(
             Arrays.asList(CategoryRequest.builder().id(1).description("Electronica").build(),
@@ -14,13 +17,13 @@ public class CategoryRepository {
         return this.categories;
     }
 
-    public String getCategoryById(int categoryID) {
+    public Optional<CategoryRequest> getCategoryById(int categoryID) {
         for (CategoryRequest category : categories) {
             if (category.getId() == categoryID) {
-                return category.getDescription();
+                return Optional.of(category);
             }
         }
-        return "Categoría no encontrada";
+        return Optional.empty();
     }
 
     public String createCategory(CategoryRequest categoryRequest) {
