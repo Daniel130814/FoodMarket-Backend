@@ -1,15 +1,16 @@
 package com.uade.tpo.foodmarketplace.service;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
-import com.uade.tpo.foodmarketplace.entity.CategoryRequest;
+import com.uade.tpo.foodmarketplace.entity.Category;
 
 public interface CategoryService {
 
-    ArrayList<CategoryRequest> getCategories();
+    List<Category> getCategories();
 
-    Optional<CategoryRequest> getCategoryById(int categoryId);
+    Optional<Category> getCategoryById(Long categoryId);
 
-    String createCategory(CategoryRequest categoryRequest);
+    String createCategory(Category categoryRequest);
 }
