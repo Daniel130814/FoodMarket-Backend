@@ -15,10 +15,26 @@ public class CategoryRepository {
     }
 
     public String getCategoryById(int categoryID) {
-        return null;
+        for (CategoryRequest category : categories) {
+            if (category.getId() == categoryID) {
+                return category.getDescription();
+            }
+        }
+        return "Categoría no encontrada";
     }
 
-    public String createCategory(int entity) {
-        return null;
+    public String createCategory(CategoryRequest categoryRequest) {
+        int nextId = 0;
+
+        for (CategoryRequest category : categories) {
+            if (category.getId() > nextId) {
+                nextId = category.getId();
+            }
+        }
+
+        nextId++;
+        categoryRequest.setId(nextId);
+        categories.add(categoryRequest);
+        return "Categoría creada correctamente";
     }
 }

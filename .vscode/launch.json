@@ -1,0 +1,14 @@
+{
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot-FoodmarketplaceApplication<foodmarketplace>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "mainClass": "com.uade.tpo.foodmarketplace.FoodmarketplaceApplication",
+      "projectName": "foodmarketplace",
+      "args": "",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}

@@ -3,11 +3,10 @@ package com.uade.tpo.foodmarketplace.controllers;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.uade.tpo.foodmarketplace.entity.CategoryRequest;
 import com.uade.tpo.foodmarketplace.service.CategoryService;
-import com.uade.tpo.foodmarketplace.model.Category;
 
 import java.util.ArrayList;
-import java.util.Locale.Category;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,22 +17,25 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RequestMapping("categories")
 public class CategoriesController {
 
+    private final CategoryService categoryService;
+
+    public CategoriesController(CategoryService categoryService) {
+        this.categoryService = categoryService;
+    }
+
     @GetMapping
-    public ArrayList<Category> getCategories() {
-        CategoryService categoryService = new CategoryService();
+    public ArrayList<CategoryRequest> getCategories() {
         return categoryService.getCategories();
     }
 
     @GetMapping("/{categoryId}")
-    public String getCategoryByID(@PathVariable int categoryID) {
-        CategoryService categoryService = new CategoryService();
-        return categoryService.getCategoryById(categoryID);
+    public String getCategoryById(@PathVariable("categoryId") int categoryId) {
+        return categoryService.getCategoryById(categoryId);
     }
 
     @PostMapping("createCategory")
-    public String createCategory(@RequestBody int categoryID) {
-        CategoryService categoryService = new CategoryService();
-        return categoryService.createCategory(categoryID);
+    public String createCategory(@RequestBody CategoryRequest categoryRequest) {
+        return categoryService.createCategory(categoryRequest);
     }
 
 }
