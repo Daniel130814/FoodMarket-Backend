@@ -1,6 +1,5 @@
 package com.uade.tpo.foodmarketplace.service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,5 +11,6 @@ public interface CategoryService {
 
     Optional<Category> getCategoryById(Long categoryId);
 
-    String createCategory(Category categoryRequest);
+    Category createCategory(String description);
+
 }

@@ -1,12 +1,15 @@
 package com.uade.tpo.foodmarketplace.controllers;
 
+import java.net.URI;
+
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.uade.tpo.foodmarketplace.entity.Category;
+import com.uade.tpo.foodmarketplace.entity.dto.CategoryRequest;
+import com.uade.tpo.foodmarketplace.exceptions.CategoryDuplicateException;
 import com.uade.tpo.foodmarketplace.service.CategoryService;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,7 +33,7 @@ public class CategoriesController {
     }
 
     @GetMapping("/{categoryId}")
-    public ResponseEntity<Category> getCategoryById(@PathVariable("categoryId") int categoryId) {
+    public ResponseEntity<Category> getCategoryById(@PathVariable("categoryId") Long categoryId) {
         Optional<Category> category = categoryService.getCategoryById(categoryId);
 
         if (category.isPresent()) {
@@ -41,8 +44,14 @@ public class CategoriesController {
     }
 
     @PostMapping("createCategory")
-    public String createCategory(@RequestBody Category categoryRequest) {
-        return categoryService.createCategory(categoryRequest);
+    public ResponseEntity<Category> createCategory(@RequestBody CategoryRequest categoryRequest)
+            throws CategoryDuplicateException {
+        Category result = categoryService.createCategory(
+                categoryRequest.getDescription());
+
+        return ResponseEntity
+                .created(URI.create("/categories/" + result.getId()))
+                .body(result);
     }
 
 }
