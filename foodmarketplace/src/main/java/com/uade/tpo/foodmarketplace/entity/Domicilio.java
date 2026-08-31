@@ -43,9 +43,6 @@ public class Domicilio {
     @Column
     private String indicacionesEntrega;
 
-    @Column(nullable = false)
-    private Boolean predeterminado;
-
     @ManyToOne
     @JoinColumn(name = "usuario_id", nullable = false)
     private User usuario;

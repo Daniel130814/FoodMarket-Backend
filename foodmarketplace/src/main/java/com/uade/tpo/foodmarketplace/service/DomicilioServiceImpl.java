@@ -43,7 +43,7 @@ public class DomicilioServiceImpl implements DomicilioService {
     @Override
     public Domicilio createDomicilio(String calle, String numero, String piso, String departamento,
             String ciudad, String provincia, String codigoPostal, String indicacionesEntrega,
-            Boolean predeterminado, Long usuarioId) {
+            Long usuarioId) {
 
         User usuario = userRepository.findById(usuarioId)
                 .orElseThrow(UserNotFoundException::new);
@@ -57,7 +57,6 @@ public class DomicilioServiceImpl implements DomicilioService {
         domicilio.setProvincia(provincia);
         domicilio.setCodigoPostal(codigoPostal);
         domicilio.setIndicacionesEntrega(indicacionesEntrega);
-        domicilio.setPredeterminado(predeterminado != null && predeterminado);
         domicilio.setUsuario(usuario);
 
         return domicilioRepository.save(domicilio);

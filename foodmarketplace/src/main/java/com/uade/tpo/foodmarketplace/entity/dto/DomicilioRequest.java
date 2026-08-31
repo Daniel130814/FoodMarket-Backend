@@ -16,6 +16,5 @@ public class DomicilioRequest {
     private String provincia;
     private String codigoPostal;
     private String indicacionesEntrega;
-    private Boolean predeterminado;
     private Long usuarioId;
 }

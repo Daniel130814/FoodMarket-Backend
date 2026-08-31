@@ -15,5 +15,5 @@ public interface DomicilioService {
 
     Domicilio createDomicilio(String calle, String numero, String piso, String departamento,
             String ciudad, String provincia, String codigoPostal, String indicacionesEntrega,
-            Boolean predeterminado, Long usuarioId);
+            Long usuarioId);
 }

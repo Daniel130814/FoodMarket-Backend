@@ -58,7 +58,6 @@ public class DomiciliosController {
                 domicilioRequest.getProvincia(),
                 domicilioRequest.getCodigoPostal(),
                 domicilioRequest.getIndicacionesEntrega(),
-                domicilioRequest.getPredeterminado(),
                 domicilioRequest.getUsuarioId());
 
         return ResponseEntity
