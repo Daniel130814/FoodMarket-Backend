@@ -1,7 +1,5 @@
 package com.uade.tpo.foodmarketplace.entity.dto;
 
-import com.uade.tpo.foodmarketplace.entity.DiaSemana;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,11 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class DishRequest {
+public class IngredienteRequest {
     private String nombre;
     private String descripcion;
-    private String ingredientes;
-    private DiaSemana diaSemana;
-    private String imagenUrl;
-    private Long menuSemanalId;
 }

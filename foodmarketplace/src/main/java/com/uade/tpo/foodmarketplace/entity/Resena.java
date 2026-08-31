@@ -4,8 +4,6 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -16,28 +14,27 @@ import lombok.Data;
 
 @Entity
 @Data
-@Table(name = "orders")
-public class Order {
+@Table(name = "resenas")
+public class Resena {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-
     private Long id;
 
+    @Column(nullable = false)
+    private Integer calificacion;
+
     @Column
-    private Float precioFinal;
+    private String comentario;
 
     @Column(nullable = false)
     private LocalDateTime fechaCreacion;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private EstadoPedido estado;
+    @ManyToOne
+    @JoinColumn(name = "cliente_id", nullable = false)
+    private User cliente;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @ManyToOne
-    @JoinColumn(name = "domicilio_entrega_id", nullable = false)
-    private Domicilio domicilioEntrega;
+    @JoinColumn(name = "plato_id", nullable = false)
+    private Plato plato;
 }

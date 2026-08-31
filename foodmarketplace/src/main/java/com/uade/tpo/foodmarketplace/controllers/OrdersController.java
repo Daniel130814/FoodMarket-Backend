@@ -45,8 +45,9 @@ public class OrdersController {
     public ResponseEntity<Order> createOrder(@RequestBody OrderRequest orderRequest)
             throws UserNotFoundException {
         Order result = orderService.createOrder(
-                orderRequest.getPrice(),
-                orderRequest.getUserId());
+                orderRequest.getPrecioFinal(),
+                orderRequest.getUserId(),
+                orderRequest.getDomicilioEntregaId());
 
         return ResponseEntity
                 .created(URI.create("/orders/" + result.getId()))

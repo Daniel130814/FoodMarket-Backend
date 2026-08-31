@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.uade.tpo.foodmarketplace.entity.User;
+import com.uade.tpo.foodmarketplace.entity.Role;
 import com.uade.tpo.foodmarketplace.exceptions.UserDuplicateException;
 import com.uade.tpo.foodmarketplace.repository.UserRepository;
 
@@ -27,7 +28,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User createUser(String nombre, String apellido, String email)
+    public User createUser(String nombre, String apellido, String email, Role role)
             throws UserDuplicateException {
 
         List<User> users = userRepository.findAll();
@@ -43,6 +44,7 @@ public class UserServiceImpl implements UserService {
         user.setNombre(nombre);
         user.setApellido(apellido);
         user.setEmail(email);
+        user.setRole(role == null ? Role.CLIENTE : role);
 
         return userRepository.save(user);
     }

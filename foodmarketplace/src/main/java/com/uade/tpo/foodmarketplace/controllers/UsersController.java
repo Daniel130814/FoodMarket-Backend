@@ -47,7 +47,8 @@ public class UsersController {
         User result = userService.createUser(
                 userRequest.getNombre(),
                 userRequest.getApellido(),
-                userRequest.getEmail());
+                userRequest.getEmail(),
+                userRequest.getRole());
 
         return ResponseEntity
                 .created(URI.create("/users/" + result.getId()))

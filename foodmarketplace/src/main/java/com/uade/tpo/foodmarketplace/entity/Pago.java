@@ -10,34 +10,37 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
 @Data
-@Table(name = "orders")
-public class Order {
+@Table(name = "pagos")
+public class Pago {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-
     private Long id;
 
-    @Column
-    private Float precioFinal;
+    @Column(nullable = false)
+    private Float monto;
 
     @Column(nullable = false)
     private LocalDateTime fechaCreacion;
 
+    @Column
+    private LocalDateTime fechaPago;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private EstadoPedido estado;
+    private EstadoPago estado;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MedioPago medioPago;
 
-    @ManyToOne
-    @JoinColumn(name = "domicilio_entrega_id", nullable = false)
-    private Domicilio domicilioEntrega;
+    @OneToOne
+    @JoinColumn(name = "pedido_id", nullable = false, unique = true)
+    private Order pedido;
 }

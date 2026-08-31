@@ -7,8 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderRequest {
-    private Float precioFinal;
-    private Long userId;
-    private Long domicilioEntregaId;
+public class ResenaRequest {
+    private Integer calificacion;
+    private String comentario;
+    private Long clienteId;
+    private Long platoId;
 }

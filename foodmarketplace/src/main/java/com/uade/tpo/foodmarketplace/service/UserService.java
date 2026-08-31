@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.uade.tpo.foodmarketplace.entity.User;
+import com.uade.tpo.foodmarketplace.entity.Role;
 
 public interface UserService {
 
@@ -11,5 +12,5 @@ public interface UserService {
 
     Optional<User> getUserById(Long userId);
 
-    User createUser(String nombre, String apellido, String email);
+    User createUser(String nombre, String apellido, String email, Role role);
 }
