@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import lombok.Data;
 
 @Entity
@@ -22,17 +23,17 @@ public class DetallePedido {
     @Column(nullable = false)
     private Integer cantidad;
 
-    @Column(nullable = false)
-    private Float precioUnitario;
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal precioUnitario;
 
-    @Column(nullable = false)
-    private Float subtotal;
-
-    @ManyToOne
-    @JoinColumn(name = "pedido_id", nullable = false)
-    private Order pedido;
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal subtotal;
 
     @ManyToOne
-    @JoinColumn(name = "menu_semanal_id", nullable = false)
-    private WeeklyMenu menuSemanal;
+    @JoinColumn(name = "subpedido_chef_id", nullable = false)
+    private SubPedidoChef subPedidoChef;
+
+    @ManyToOne
+    @JoinColumn(name = "plato_id", nullable = false)
+    private Plato plato;
 }

@@ -3,8 +3,8 @@ package com.uade.tpo.foodmarketplace.service;
 import java.util.List;
 import java.util.Optional;
 
-import com.uade.tpo.foodmarketplace.entity.DiaSemana;
 import com.uade.tpo.foodmarketplace.entity.Plato;
+import com.uade.tpo.foodmarketplace.entity.dto.PlatoRequest;
 
 public interface PlatoService {
 
@@ -12,8 +12,5 @@ public interface PlatoService {
 
     Optional<Plato> getPlatoById(Long platoId);
 
-    List<Plato> getPlatosByMenuSemanalId(Long menuSemanalId);
-
-    Plato createPlato(String nombre, String descripcion, List<Long> ingredientesIds,
-            DiaSemana diaSemana, String imagenUrl, Long menuSemanalId);
+    Plato createPlato(PlatoRequest request);
 }

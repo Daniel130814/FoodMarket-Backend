@@ -2,7 +2,7 @@ package com.uade.tpo.foodmarketplace.controllers;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
+import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -13,8 +13,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.uade.tpo.foodmarketplace.entity.Resena;
 import com.uade.tpo.foodmarketplace.entity.dto.ResenaRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.ResenaResponse;
+import com.uade.tpo.foodmarketplace.entity.dto.ResponseMapper;
 import com.uade.tpo.foodmarketplace.service.ResenaService;
 
 @RestController
@@ -25,29 +26,24 @@ public class ResenasController {
     private ResenaService resenaService;
 
     @GetMapping
-    public ResponseEntity<List<Resena>> getResenas() {
-        return ResponseEntity.ok(resenaService.getResenas());
+    public ResponseEntity<List<ResenaResponse>> getResenas() {
+        return ResponseEntity.ok(resenaService.getResenas().stream().map(ResponseMapper::resena).toList());
     }
 
     @GetMapping("/{resenaId}")
-    public ResponseEntity<Resena> getResenaById(@PathVariable("resenaId") Long resenaId) {
-        Optional<Resena> resena = resenaService.getResenaById(resenaId);
-
-        if (resena.isPresent()) {
-            return ResponseEntity.ok(resena.get());
-        }
-
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<ResenaResponse> getResenaById(@PathVariable("resenaId") Long resenaId) {
+        return resenaService.getResenaById(resenaId).map(ResponseMapper::resena).map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/plato/{platoId}")
-    public ResponseEntity<List<Resena>> getResenasByPlatoId(@PathVariable("platoId") Long platoId) {
-        return ResponseEntity.ok(resenaService.getResenasByPlatoId(platoId));
+    public ResponseEntity<List<ResenaResponse>> getResenasByPlatoId(@PathVariable("platoId") Long platoId) {
+        return ResponseEntity.ok(resenaService.getResenasByPlatoId(platoId).stream().map(ResponseMapper::resena).toList());
     }
 
     @PostMapping("createResena")
-    public ResponseEntity<Resena> createResena(@RequestBody ResenaRequest resenaRequest) {
-        Resena result = resenaService.createResena(
+    public ResponseEntity<ResenaResponse> createResena(@Valid @RequestBody ResenaRequest resenaRequest) {
+        var result = resenaService.createResena(
                 resenaRequest.getCalificacion(),
                 resenaRequest.getComentario(),
                 resenaRequest.getClienteId(),
@@ -55,6 +51,6 @@ public class ResenasController {
 
         return ResponseEntity
                 .created(URI.create("/resenas/" + result.getId()))
-                .body(result);
+                .body(ResponseMapper.resena(result));
     }
 }

@@ -1,0 +1,74 @@
+package com.uade.tpo.foodmarketplace.service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
+import com.uade.tpo.foodmarketplace.entity.ChefProfile;
+import com.uade.tpo.foodmarketplace.entity.Role;
+import com.uade.tpo.foodmarketplace.entity.User;
+import com.uade.tpo.foodmarketplace.entity.dto.ChefProfileRequest;
+import com.uade.tpo.foodmarketplace.exceptions.BusinessRuleException;
+import com.uade.tpo.foodmarketplace.exceptions.UserNotFoundException;
+import com.uade.tpo.foodmarketplace.repository.ChefProfileRepository;
+import com.uade.tpo.foodmarketplace.repository.ResenaRepository;
+import com.uade.tpo.foodmarketplace.repository.UserRepository;
+
+@Service
+public class ChefProfileServiceImpl implements ChefProfileService {
+
+    private final ChefProfileRepository chefProfileRepository;
+    private final UserRepository userRepository;
+    private final ResenaRepository resenaRepository;
+
+    public ChefProfileServiceImpl(ChefProfileRepository chefProfileRepository, UserRepository userRepository,
+            ResenaRepository resenaRepository) {
+        this.chefProfileRepository = chefProfileRepository;
+        this.userRepository = userRepository;
+        this.resenaRepository = resenaRepository;
+    }
+
+    @Override
+    public List<ChefProfile> getChefProfiles() {
+        return chefProfileRepository.findAll();
+    }
+
+    @Override
+    public Optional<ChefProfile> getChefProfileById(Long id) {
+        return chefProfileRepository.findById(id);
+    }
+
+    @Override
+    public ChefProfile createChefProfile(ChefProfileRequest request) {
+        User user = userRepository.findById(request.getUserId()).orElseThrow(UserNotFoundException::new);
+
+        if (user.getRole() != Role.CHEF) {
+            throw new BusinessRuleException("El perfil solo puede pertenecer a un usuario CHEF");
+        }
+
+        if (chefProfileRepository.existsByUserId(user.getId())) {
+            throw new BusinessRuleException("El chef ya posee un perfil");
+        }
+
+        ChefProfile profile = new ChefProfile();
+        profile.setUser(user);
+        profile.setBiografia(request.getBiografia());
+        profile.setEspecialidad(request.getEspecialidad());
+        profile.setFotoUrl(request.getFotoUrl());
+        profile.setDescripcion(request.getDescripcion());
+
+        return chefProfileRepository.save(profile);
+    }
+
+    @Override
+    public BigDecimal getReputacion(Long chefId) {
+        userRepository.findById(chefId).orElseThrow(UserNotFoundException::new);
+
+        Double promedio = resenaRepository.findPromedioCalificacionesByChefId(chefId);
+
+        return promedio == null ? BigDecimal.ZERO : BigDecimal.valueOf(promedio).setScale(2, RoundingMode.HALF_UP);
+    }
+}

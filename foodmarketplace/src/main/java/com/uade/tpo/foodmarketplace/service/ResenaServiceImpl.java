@@ -8,12 +8,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.uade.tpo.foodmarketplace.entity.Resena;
+import com.uade.tpo.foodmarketplace.entity.EstadoPedido;
 import com.uade.tpo.foodmarketplace.entity.Plato;
 import com.uade.tpo.foodmarketplace.entity.User;
 import com.uade.tpo.foodmarketplace.exceptions.CalificacionInvalidaException;
 import com.uade.tpo.foodmarketplace.exceptions.PlatoNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.ResenaDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.UserNotFoundException;
+import com.uade.tpo.foodmarketplace.exceptions.BusinessRuleException;
+import com.uade.tpo.foodmarketplace.repository.DetallePedidoRepository;
 import com.uade.tpo.foodmarketplace.repository.PlatoRepository;
 import com.uade.tpo.foodmarketplace.repository.ResenaRepository;
 import com.uade.tpo.foodmarketplace.repository.UserRepository;
@@ -29,6 +32,9 @@ public class ResenaServiceImpl implements ResenaService {
 
     @Autowired
     private PlatoRepository platoRepository;
+
+    @Autowired
+    private DetallePedidoRepository detallePedidoRepository;
 
     @Override
     public List<Resena> getResenas() {
@@ -63,6 +69,10 @@ public class ResenaServiceImpl implements ResenaService {
 
         if (resenaRepository.existsByClienteIdAndPlatoId(clienteId, platoId)) {
             throw new ResenaDuplicateException();
+        }
+        if (!detallePedidoRepository.existsBySubPedidoChefPedidoUserIdAndPlatoIdAndSubPedidoChefEstado(
+                clienteId, platoId, EstadoPedido.ENTREGADO)) {
+            throw new BusinessRuleException("Solo puede resenar un plato comprado en un subpedido entregado");
         }
 
         Resena resena = new Resena();

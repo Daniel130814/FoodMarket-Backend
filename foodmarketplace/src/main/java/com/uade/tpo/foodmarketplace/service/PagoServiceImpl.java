@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.tpo.foodmarketplace.entity.EstadoPago;
 import com.uade.tpo.foodmarketplace.entity.MedioPago;
@@ -14,6 +15,7 @@ import com.uade.tpo.foodmarketplace.entity.Pago;
 import com.uade.tpo.foodmarketplace.exceptions.PagoDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.PagoNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.PedidoNotFoundException;
+import com.uade.tpo.foodmarketplace.exceptions.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.repository.OrderRepository;
 import com.uade.tpo.foodmarketplace.repository.PagoRepository;
 
@@ -37,12 +39,17 @@ public class PagoServiceImpl implements PagoService {
     }
 
     @Override
+    @Transactional
     public Pago createPago(MedioPago medioPago, Long pedidoId) {
         Order pedido = orderRepository.findById(pedidoId)
                 .orElseThrow(PedidoNotFoundException::new);
 
-        if (pagoRepository.existsByPedidoId(pedidoId)) {
-            throw new PagoDuplicateException();
+        if (pedido.isPagoBloqueado() || pagoRepository.countByPedidoIdAndEstado(pedidoId, EstadoPago.RECHAZADO) >= 5) {
+            pedido.setPagoBloqueado(true);
+            throw new BusinessRuleException("Los intentos de pago para esta orden estan bloqueados");
+        }
+        if (pagoRepository.existsByPedidoIdAndEstado(pedidoId, EstadoPago.APROBADO)) {
+            throw new BusinessRuleException("La orden ya posee un pago aprobado");
         }
 
         Pago pago = new Pago();
@@ -56,10 +63,20 @@ public class PagoServiceImpl implements PagoService {
     }
 
     @Override
+    @Transactional
     public Pago actualizarEstadoPago(Long pagoId, EstadoPago estado) {
         Pago pago = pagoRepository.findById(pagoId)
                 .orElseThrow(PagoNotFoundException::new);
 
+        if (estado == EstadoPago.APROBADO && pagoRepository.existsByPedidoIdAndEstado(pago.getPedido().getId(), EstadoPago.APROBADO)
+                && pago.getEstado() != EstadoPago.APROBADO) {
+            throw new BusinessRuleException("La orden ya posee un pago aprobado");
+        }
+        if (estado == EstadoPago.RECHAZADO && pago.getEstado() != EstadoPago.RECHAZADO) {
+            long rechazados = pagoRepository.countByPedidoIdAndEstado(pago.getPedido().getId(), EstadoPago.RECHAZADO);
+            if (rechazados >= 5) throw new BusinessRuleException("Se alcanzo el maximo de intentos rechazados");
+            if (rechazados + 1 == 5) pago.getPedido().setPagoBloqueado(true);
+        }
         pago.setEstado(estado);
 
         if (estado == EstadoPago.APROBADO && pago.getFechaPago() == null) {

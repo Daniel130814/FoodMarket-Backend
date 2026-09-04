@@ -12,6 +12,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import lombok.Data;
 
 @Entity
@@ -42,5 +43,9 @@ public class User {
     @OneToMany(mappedBy = "usuario")
     @JsonIgnore
     private List<Domicilio> domicilios;
+
+    @OneToOne(mappedBy = "user")
+    @JsonIgnore
+    private ChefProfile chefProfile;
 
 }

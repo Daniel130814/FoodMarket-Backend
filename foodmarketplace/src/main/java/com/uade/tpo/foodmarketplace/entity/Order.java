@@ -1,17 +1,11 @@
 package com.uade.tpo.foodmarketplace.entity;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
@@ -23,8 +17,8 @@ public class Order {
 
     private Long id;
 
-    @Column
-    private Float precioFinal;
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal precioFinal;
 
     @Column(nullable = false)
     private LocalDateTime fechaCreacion;
@@ -40,4 +34,13 @@ public class Order {
     @ManyToOne
     @JoinColumn(name = "domicilio_entrega_id", nullable = false)
     private Domicilio domicilioEntrega;
+
+    @Column(nullable = false)
+    private boolean pagoBloqueado = false;
+
+    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SubPedidoChef> subPedidos = new ArrayList<>();
+
+    @OneToMany(mappedBy = "pedido")
+    private List<Pago> pagos = new ArrayList<>();
 }

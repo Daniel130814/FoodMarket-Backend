@@ -2,20 +2,21 @@ package com.uade.tpo.foodmarketplace.controllers;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
+import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.uade.tpo.foodmarketplace.entity.Order;
 import com.uade.tpo.foodmarketplace.entity.dto.OrderRequest;
-import com.uade.tpo.foodmarketplace.exceptions.UserNotFoundException;
+import com.uade.tpo.foodmarketplace.entity.dto.OrderResponse;
+import com.uade.tpo.foodmarketplace.entity.dto.ResponseMapper;
 import com.uade.tpo.foodmarketplace.service.OrderService;
 
 @RestController
@@ -26,31 +27,27 @@ public class OrdersController {
     private OrderService orderService;
 
     @GetMapping
-    public ResponseEntity<List<Order>> getOrders() {
-        return ResponseEntity.ok(orderService.getOrders());
+    public ResponseEntity<List<OrderResponse>> getOrders() {
+        return ResponseEntity.ok(orderService.getOrders().stream().map(ResponseMapper::order).toList());
     }
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<Order> getOrderById(@PathVariable("orderId") Long orderId) {
-        Optional<Order> order = orderService.getOrderById(orderId);
-
-        if (order.isPresent()) {
-            return ResponseEntity.ok(order.get());
-        }
-
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable("orderId") Long orderId) {
+        return orderService.getOrderById(orderId).map(ResponseMapper::order).map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping("createOrder")
-    public ResponseEntity<Order> createOrder(@RequestBody OrderRequest orderRequest)
-            throws UserNotFoundException {
-        Order result = orderService.createOrder(
-                orderRequest.getPrecioFinal(),
-                orderRequest.getUserId(),
-                orderRequest.getDomicilioEntregaId());
+    public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody OrderRequest orderRequest) {
+        var result = orderService.createOrder(orderRequest);
 
         return ResponseEntity
                 .created(URI.create("/orders/" + result.getId()))
-                .body(result);
+                .body(ResponseMapper.order(result));
+    }
+
+    @PatchMapping("/{orderId}/cancelar")
+    public ResponseEntity<OrderResponse> cancelarOrder(@PathVariable Long orderId) {
+        return ResponseEntity.ok(ResponseMapper.order(orderService.cancelarOrder(orderId)));
     }
 }

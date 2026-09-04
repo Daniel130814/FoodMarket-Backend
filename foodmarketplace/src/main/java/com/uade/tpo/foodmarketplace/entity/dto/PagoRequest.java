@@ -1,6 +1,7 @@
 package com.uade.tpo.foodmarketplace.entity.dto;
 
 import com.uade.tpo.foodmarketplace.entity.MedioPago;
+import jakarta.validation.constraints.NotNull;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,6 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PagoRequest {
-    private MedioPago medioPago;
-    private Long pedidoId;
+    @NotNull private MedioPago medioPago;
+    @NotNull private Long pedidoId;
 }

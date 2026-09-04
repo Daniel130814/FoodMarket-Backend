@@ -30,12 +30,7 @@ public class CategoryServiceImpl implements CategoryService {
     public Category createCategory(String description)
             throws CategoryDuplicateException {
 
-        List<Category> categories = categoryRepository.findAll();
-
-        boolean categoryAlreadyExists = categories.stream().anyMatch(category ->
-                category.getDescription().equalsIgnoreCase(description));
-
-        if (categoryAlreadyExists) {
+        if (categoryRepository.existsByDescriptionIgnoreCase(description)) {
             throw new CategoryDuplicateException();
         }
 
