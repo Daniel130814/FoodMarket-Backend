@@ -7,9 +7,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.uade.tpo.foodmarketplace.entity.domicilio.Domicilio;
+import com.uade.tpo.foodmarketplace.entity.dto.domicilio.DomicilioUpdateRequest;
 import com.uade.tpo.foodmarketplace.entity.user.User;
+import com.uade.tpo.foodmarketplace.exceptions.common.ResourceInUseException;
+import com.uade.tpo.foodmarketplace.exceptions.domicilio.DomicilioNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.domicilio.DomicilioRepository;
+import com.uade.tpo.foodmarketplace.repository.order.OrderRepository;
 import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
 
 @Service
@@ -20,6 +24,9 @@ public class DomicilioServiceImpl implements DomicilioService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private OrderRepository orderRepository;
 
     @Override
     public List<Domicilio> getDomicilios() {
@@ -60,5 +67,37 @@ public class DomicilioServiceImpl implements DomicilioService {
         domicilio.setUsuario(usuario);
 
         return domicilioRepository.save(domicilio);
+    }
+
+    /**
+     * Updates the fields of an existing address while retaining its current owner.
+     */
+    @Override
+    public Domicilio updateDomicilio(Long domicilioId, DomicilioUpdateRequest request) {
+        // No user is accepted here, preventing an address from being reassigned accidentally.
+        Domicilio domicilio = domicilioRepository.findById(domicilioId).orElseThrow(DomicilioNotFoundException::new);
+        domicilio.setCalle(request.getCalle());
+        domicilio.setNumero(request.getNumero());
+        domicilio.setPiso(request.getPiso());
+        domicilio.setDepartamento(request.getDepartamento());
+        domicilio.setCiudad(request.getCiudad());
+        domicilio.setProvincia(request.getProvincia());
+        domicilio.setCodigoPostal(request.getCodigoPostal());
+        domicilio.setIndicacionesEntrega(request.getIndicacionesEntrega());
+
+        return domicilioRepository.save(domicilio);
+    }
+
+    /**
+     * Deletes an address only if there are no orders that require it as history.
+     */
+    @Override
+    public void deleteDomicilio(Long domicilioId) {
+        Domicilio domicilio = domicilioRepository.findById(domicilioId).orElseThrow(DomicilioNotFoundException::new);
+        if (orderRepository.existsByDomicilioEntregaId(domicilioId)) {
+            throw new ResourceInUseException("No se puede eliminar un domicilio asociado a un pedido");
+        }
+
+        domicilioRepository.delete(domicilio);
     }
 }

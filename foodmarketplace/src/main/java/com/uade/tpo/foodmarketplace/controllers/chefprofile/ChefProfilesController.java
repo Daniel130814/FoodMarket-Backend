@@ -10,12 +10,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.uade.tpo.foodmarketplace.entity.dto.chefprofile.ChefProfileRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.chefprofile.ChefProfileResponse;
+import com.uade.tpo.foodmarketplace.entity.dto.chefprofile.ChefProfileUpdateRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ResponseMapper;
 import com.uade.tpo.foodmarketplace.service.chefprofile.ChefProfileService;
 
@@ -56,5 +58,16 @@ public class ChefProfilesController {
         var profile = chefProfileService.createChefProfile(request);
         return ResponseEntity.created(URI.create("/chef-profiles/" + profile.getId()))
                 .body(ResponseMapper.chefProfile(profile, chefProfileService.getReputacion(profile.getUser().getId())));
+    }
+
+    /**
+     * Updates the descriptive data of a chef profile without changing its user.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<ChefProfileResponse> update(@PathVariable Long id,
+            @Valid @RequestBody ChefProfileUpdateRequest request) {
+        var profile = chefProfileService.updateChefProfile(id, request);
+        return ResponseEntity.ok(ResponseMapper.chefProfile(profile,
+                chefProfileService.getReputacion(profile.getUser().getId())));
     }
 }

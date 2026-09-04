@@ -12,6 +12,11 @@ public interface ResenaRepository extends JpaRepository<Resena, Long> {
 
     boolean existsByClienteIdAndPlatoId(Long clienteId, Long platoId);
 
+    /**
+     * Indicates whether a dish has reviews that must be kept as historical data.
+     */
+    boolean existsByPlatoId(Long platoId);
+
     @org.springframework.data.jpa.repository.Query("select avg(r.calificacion) from Resena r where r.plato.chef.id = :chefId")
     Double findPromedioCalificacionesByChefId(@org.springframework.data.repository.query.Param("chefId") Long chefId);
 }

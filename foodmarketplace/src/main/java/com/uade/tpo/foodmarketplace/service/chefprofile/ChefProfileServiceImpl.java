@@ -11,7 +11,9 @@ import com.uade.tpo.foodmarketplace.entity.chefprofile.ChefProfile;
 import com.uade.tpo.foodmarketplace.entity.user.Role;
 import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.entity.dto.chefprofile.ChefProfileRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.chefprofile.ChefProfileUpdateRequest;
 import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
+import com.uade.tpo.foodmarketplace.exceptions.chefprofile.ChefProfileNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.chefprofile.ChefProfileRepository;
 import com.uade.tpo.foodmarketplace.repository.resena.ResenaRepository;
@@ -60,6 +62,26 @@ public class ChefProfileServiceImpl implements ChefProfileService {
         profile.setFotoUrl(request.getFotoUrl());
         profile.setDescripcion(request.getDescripcion());
 
+        return chefProfileRepository.save(profile);
+    }
+
+    /**
+     * Updates descriptive profile fields while preserving the associated chef user.
+     */
+    @Override
+    public ChefProfile updateChefProfile(Long id, ChefProfileUpdateRequest request) {
+        // Both records are checked to avoid updating a profile with an invalid associated chef.
+        ChefProfile profile = chefProfileRepository.findById(id)
+                .orElseThrow(ChefProfileNotFoundException::new);
+        User user = userRepository.findById(profile.getUser().getId()).orElseThrow(UserNotFoundException::new);
+        if (user.getRole() != Role.CHEF) {
+            throw new BusinessRuleException("El perfil solo puede pertenecer a un usuario CHEF");
+        }
+
+        profile.setBiografia(request.getBiografia());
+        profile.setEspecialidad(request.getEspecialidad());
+        profile.setFotoUrl(request.getFotoUrl());
+        profile.setDescripcion(request.getDescripcion());
         return chefProfileRepository.save(profile);
     }
 

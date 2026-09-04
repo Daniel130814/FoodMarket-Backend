@@ -8,12 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.uade.tpo.foodmarketplace.entity.resena.Resena;
+import com.uade.tpo.foodmarketplace.entity.dto.resena.ResenaUpdateRequest;
 import com.uade.tpo.foodmarketplace.entity.order.EstadoPedido;
 import com.uade.tpo.foodmarketplace.entity.plato.Plato;
 import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.exceptions.resena.CalificacionInvalidaException;
 import com.uade.tpo.foodmarketplace.exceptions.plato.PlatoNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.resena.ResenaDuplicateException;
+import com.uade.tpo.foodmarketplace.exceptions.resena.ResenaNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.repository.order.DetallePedidoRepository;
@@ -83,5 +85,30 @@ public class ResenaServiceImpl implements ResenaService {
         resena.setPlato(plato);
 
         return resenaRepository.save(resena);
+    }
+
+    /**
+     * Updates a review without repeating the purchase validation required at creation time.
+     */
+    @Override
+    public Resena updateResena(Long resenaId, ResenaUpdateRequest request) {
+        if (request.getCalificacion() < 1 || request.getCalificacion() > 5) {
+            throw new CalificacionInvalidaException();
+        }
+
+        // The existing review retains its original customer, dish, and creation date.
+        Resena resena = resenaRepository.findById(resenaId).orElseThrow(ResenaNotFoundException::new);
+        resena.setCalificacion(request.getCalificacion());
+        resena.setComentario(request.getComentario());
+        return resenaRepository.save(resena);
+    }
+
+    /**
+     * Deletes a review after confirming that it exists.
+     */
+    @Override
+    public void deleteResena(Long resenaId) {
+        Resena resena = resenaRepository.findById(resenaId).orElseThrow(ResenaNotFoundException::new);
+        resenaRepository.delete(resena);
     }
 }

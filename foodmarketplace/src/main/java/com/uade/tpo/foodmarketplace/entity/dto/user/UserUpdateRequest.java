@@ -1,23 +1,22 @@
 package com.uade.tpo.foodmarketplace.entity.dto.user;
 
-import com.uade.tpo.foodmarketplace.entity.user.Role;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
 
+/**
+ * Contains user profile data that can be edited without changing the role.
+ */
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class UserRequest {
+public class UserUpdateRequest {
+
     @NotBlank
     private String nombre;
+
     @NotBlank
     private String apellido;
+
     @NotBlank
     @Email
     private String email;
-    private Role role;
 }

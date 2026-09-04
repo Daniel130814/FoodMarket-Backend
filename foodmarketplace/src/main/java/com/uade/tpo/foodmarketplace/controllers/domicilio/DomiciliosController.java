@@ -9,12 +9,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
 import com.uade.tpo.foodmarketplace.entity.domicilio.Domicilio;
 import com.uade.tpo.foodmarketplace.entity.dto.domicilio.DomicilioRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.domicilio.DomicilioUpdateRequest;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.service.domicilio.DomicilioService;
 
@@ -47,7 +51,7 @@ public class DomiciliosController {
     }
 
     @PostMapping("createDomicilio")
-    public ResponseEntity<Domicilio> createDomicilio(@RequestBody DomicilioRequest domicilioRequest)
+    public ResponseEntity<Domicilio> createDomicilio(@Valid @RequestBody DomicilioRequest domicilioRequest)
             throws UserNotFoundException {
         Domicilio result = domicilioService.createDomicilio(
                 domicilioRequest.getCalle(),
@@ -63,5 +67,23 @@ public class DomiciliosController {
         return ResponseEntity
                 .created(URI.create("/domicilios/" + result.getId()))
                 .body(result);
+    }
+
+    /**
+     * Updates an address while deliberately keeping its current user owner.
+     */
+    @PutMapping("/{domicilioId}")
+    public ResponseEntity<Domicilio> updateDomicilio(@PathVariable("domicilioId") Long domicilioId,
+            @Valid @RequestBody DomicilioUpdateRequest domicilioRequest) {
+        return ResponseEntity.ok(domicilioService.updateDomicilio(domicilioId, domicilioRequest));
+    }
+
+    /**
+     * Deletes an address that has not been recorded in an order.
+     */
+    @DeleteMapping("/{domicilioId}")
+    public ResponseEntity<Void> deleteDomicilio(@PathVariable("domicilioId") Long domicilioId) {
+        domicilioService.deleteDomicilio(domicilioId);
+        return ResponseEntity.noContent().build();
     }
 }

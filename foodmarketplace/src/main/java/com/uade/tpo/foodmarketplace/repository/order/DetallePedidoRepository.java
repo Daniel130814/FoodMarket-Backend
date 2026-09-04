@@ -12,4 +12,9 @@ public interface DetallePedidoRepository extends JpaRepository<DetallePedido, Lo
 
     boolean existsBySubPedidoChefPedidoUserIdAndPlatoIdAndSubPedidoChefEstado(Long clienteId, Long platoId,
             com.uade.tpo.foodmarketplace.entity.order.EstadoPedido estado);
+
+    /**
+     * Indicates whether a dish is part of any historical order detail.
+     */
+    boolean existsByPlatoId(Long platoId);
 }

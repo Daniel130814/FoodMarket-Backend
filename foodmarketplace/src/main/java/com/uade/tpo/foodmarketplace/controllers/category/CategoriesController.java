@@ -18,7 +18,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("categories")
@@ -44,7 +47,7 @@ public class CategoriesController {
     }
 
     @PostMapping("createCategory")
-    public ResponseEntity<Category> createCategory(@RequestBody CategoryRequest categoryRequest)
+    public ResponseEntity<Category> createCategory(@Valid @RequestBody CategoryRequest categoryRequest)
             throws CategoryDuplicateException {
         Category result = categoryService.createCategory(
                 categoryRequest.getDescription());
@@ -52,6 +55,25 @@ public class CategoriesController {
         return ResponseEntity
                 .created(URI.create("/categories/" + result.getId()))
                 .body(result);
+    }
+
+    /**
+     * Updates the description of a category identified by the URL id.
+     */
+    @PutMapping("/{categoryId}")
+    public ResponseEntity<Category> updateCategory(@PathVariable("categoryId") Long categoryId,
+            @Valid @RequestBody CategoryRequest categoryRequest) {
+        Category result = categoryService.updateCategory(categoryId, categoryRequest.getDescription());
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Deletes a category only when it is not assigned to a dish.
+     */
+    @DeleteMapping("/{categoryId}")
+    public ResponseEntity<Void> deleteCategory(@PathVariable("categoryId") Long categoryId) {
+        categoryService.deleteCategory(categoryId);
+        return ResponseEntity.noContent().build();
     }
 
 }

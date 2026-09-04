@@ -9,12 +9,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.uade.tpo.foodmarketplace.entity.dto.resena.ResenaRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.resena.ResenaResponse;
+import com.uade.tpo.foodmarketplace.entity.dto.resena.ResenaUpdateRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ResponseMapper;
 import com.uade.tpo.foodmarketplace.service.resena.ResenaService;
 
@@ -52,5 +55,23 @@ public class ResenasController {
         return ResponseEntity
                 .created(URI.create("/resenas/" + result.getId()))
                 .body(ResponseMapper.resena(result));
+    }
+
+    /**
+     * Updates only the rating and comment of an existing review.
+     */
+    @PutMapping("/{resenaId}")
+    public ResponseEntity<ResenaResponse> updateResena(@PathVariable("resenaId") Long resenaId,
+            @Valid @RequestBody ResenaUpdateRequest resenaRequest) {
+        return ResponseEntity.ok(ResponseMapper.resena(resenaService.updateResena(resenaId, resenaRequest)));
+    }
+
+    /**
+     * Deletes an existing review.
+     */
+    @DeleteMapping("/{resenaId}")
+    public ResponseEntity<Void> deleteResena(@PathVariable("resenaId") Long resenaId) {
+        resenaService.deleteResena(resenaId);
+        return ResponseEntity.noContent().build();
     }
 }

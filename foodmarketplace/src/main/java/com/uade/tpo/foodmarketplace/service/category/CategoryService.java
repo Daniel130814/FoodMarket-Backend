@@ -13,4 +13,14 @@ public interface CategoryService {
 
     Category createCategory(String description);
 
+    /**
+     * Actualiza la descripción actual de la categoria
+     */
+    Category updateCategory(Long categoryId, String description);
+
+    /**
+     * Elimina una categoria siempre y cuando un plato no lo este usando
+     */
+    void deleteCategory(Long categoryId);
+
 }

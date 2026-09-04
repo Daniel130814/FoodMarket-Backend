@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.uade.tpo.foodmarketplace.entity.ingrediente.Ingrediente;
+import com.uade.tpo.foodmarketplace.exceptions.common.ResourceInUseException;
+import com.uade.tpo.foodmarketplace.exceptions.ingrediente.IngredienteDuplicateException;
+import com.uade.tpo.foodmarketplace.exceptions.ingrediente.IngredienteNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.ingrediente.IngredienteRepository;
 
 @Service
@@ -27,10 +30,45 @@ public class IngredienteServiceImpl implements IngredienteService {
 
     @Override
     public Ingrediente createIngrediente(String nombre, String descripcion) {
+        if (ingredienteRepository.existsByNombreIgnoreCase(nombre)) {
+            throw new IngredienteDuplicateException();
+        }
+
         Ingrediente ingrediente = new Ingrediente();
         ingrediente.setNombre(nombre);
         ingrediente.setDescripcion(descripcion);
 
         return ingredienteRepository.save(ingrediente);
+    }
+
+    /**
+     * Updates an ingredient after checking that its name remains unique.
+     */
+    @Override
+    public Ingrediente updateIngrediente(Long ingredienteId, String nombre, String descripcion) {
+        // Loading the ingredient guarantees that the update keeps the original identifier.
+        Ingrediente ingrediente = ingredienteRepository.findById(ingredienteId)
+                .orElseThrow(IngredienteNotFoundException::new);
+        if (ingredienteRepository.existsByNombreIgnoreCaseAndIdNot(nombre, ingredienteId)) {
+            throw new IngredienteDuplicateException();
+        }
+
+        ingrediente.setNombre(nombre);
+        ingrediente.setDescripcion(descripcion);
+        return ingredienteRepository.save(ingrediente);
+    }
+
+    /**
+     * Deletes an ingredient only when no recipe references it.
+     */
+    @Override
+    public void deleteIngrediente(Long ingredienteId) {
+        Ingrediente ingrediente = ingredienteRepository.findById(ingredienteId)
+                .orElseThrow(IngredienteNotFoundException::new);
+        if (ingredienteRepository.existsUsedInPlatos(ingredienteId)) {
+            throw new ResourceInUseException("No se puede eliminar un ingrediente usado por uno o mas platos");
+        }
+
+        ingredienteRepository.delete(ingrediente);
     }
 }

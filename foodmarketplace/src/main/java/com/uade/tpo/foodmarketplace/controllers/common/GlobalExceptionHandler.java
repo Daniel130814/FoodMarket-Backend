@@ -11,17 +11,21 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
 import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
+import com.uade.tpo.foodmarketplace.exceptions.common.ResourceInUseException;
 import com.uade.tpo.foodmarketplace.exceptions.resena.CalificacionInvalidaException;
 import com.uade.tpo.foodmarketplace.exceptions.order.CantidadInvalidaException;
 import com.uade.tpo.foodmarketplace.exceptions.category.CategoryDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.category.CategoryNotFoundException;
+import com.uade.tpo.foodmarketplace.exceptions.chefprofile.ChefProfileNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.domicilio.DomicilioNoPerteneceAlUsuarioException;
 import com.uade.tpo.foodmarketplace.exceptions.domicilio.DomicilioNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.ingrediente.IngredienteNotFoundException;
+import com.uade.tpo.foodmarketplace.exceptions.ingrediente.IngredienteDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.pago.PagoNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.order.PedidoNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.plato.PlatoNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.resena.ResenaDuplicateException;
+import com.uade.tpo.foodmarketplace.exceptions.resena.ResenaNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 
@@ -29,19 +33,20 @@ import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler({ BusinessRuleException.class, CantidadInvalidaException.class,
-            CalificacionInvalidaException.class, CategoryDuplicateException.class, UserDuplicateException.class })
+            CalificacionInvalidaException.class, CategoryDuplicateException.class, IngredienteDuplicateException.class,
+            UserDuplicateException.class })
     ResponseEntity<ApiError> badRequest(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
-    @ExceptionHandler({ResenaDuplicateException.class})
+    @ExceptionHandler({ ResenaDuplicateException.class, ResourceInUseException.class })
     ResponseEntity<ApiError> conflict(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
     @ExceptionHandler({ UserNotFoundException.class, PlatoNotFoundException.class, PedidoNotFoundException.class,
             PagoNotFoundException.class, DomicilioNotFoundException.class, IngredienteNotFoundException.class,
-            CategoryNotFoundException.class })
+            CategoryNotFoundException.class, ResenaNotFoundException.class, ChefProfileNotFoundException.class })
     ResponseEntity<ApiError> notFound(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }

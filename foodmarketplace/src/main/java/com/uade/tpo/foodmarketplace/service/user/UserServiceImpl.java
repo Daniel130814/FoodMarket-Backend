@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 
 import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.entity.user.Role;
+import com.uade.tpo.foodmarketplace.entity.dto.user.UserUpdateRequest;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserDuplicateException;
+import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
 
 @Service
@@ -31,12 +33,8 @@ public class UserServiceImpl implements UserService {
     public User createUser(String nombre, String apellido, String email, Role role)
             throws UserDuplicateException {
 
-        List<User> users = userRepository.findAll();
-
-        boolean userAlreadyExists = users.stream()
-                .anyMatch(user -> user.getEmail().equalsIgnoreCase(email));
-
-        if (userAlreadyExists) {
+        // A derived query avoids loading every user just to validate a unique email.
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new UserDuplicateException();
         }
 
@@ -46,6 +44,23 @@ public class UserServiceImpl implements UserService {
         user.setEmail(email);
         user.setRole(role == null ? Role.CLIENTE : role);
 
+        return userRepository.save(user);
+    }
+
+    /**
+     * Updates a user's name, surname, and email without allowing a role change.
+     */
+    @Override
+    public User updateUser(Long userId, UserUpdateRequest request) {
+        // Load the managed entity so its role is preserved even if a client sends extra data.
+        User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+        if (userRepository.existsByEmailIgnoreCaseAndIdNot(request.getEmail(), userId)) {
+            throw new UserDuplicateException();
+        }
+
+        user.setNombre(request.getNombre());
+        user.setApellido(request.getApellido());
+        user.setEmail(request.getEmail());
         return userRepository.save(user);
     }
 }

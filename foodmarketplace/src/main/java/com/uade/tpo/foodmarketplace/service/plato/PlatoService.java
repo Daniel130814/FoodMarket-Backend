@@ -13,4 +13,14 @@ public interface PlatoService {
     Optional<Plato> getPlatoById(Long platoId);
 
     Plato createPlato(PlatoRequest request);
+
+    /**
+     * Updates the editable data, categories, and ingredients of an existing dish.
+     */
+    Plato updatePlato(Long platoId, PlatoRequest request);
+
+    /**
+     * Deletes a dish or pauses it when historical records still reference it.
+     */
+    void deletePlato(Long platoId);
 }

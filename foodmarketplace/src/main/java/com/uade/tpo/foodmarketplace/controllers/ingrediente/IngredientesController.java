@@ -9,9 +9,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
 import com.uade.tpo.foodmarketplace.entity.ingrediente.Ingrediente;
 import com.uade.tpo.foodmarketplace.entity.dto.ingrediente.IngredienteRequest;
@@ -42,7 +45,7 @@ public class IngredientesController {
     }
 
     @PostMapping("createIngrediente")
-    public ResponseEntity<Ingrediente> createIngrediente(@RequestBody IngredienteRequest ingredienteRequest) {
+    public ResponseEntity<Ingrediente> createIngrediente(@Valid @RequestBody IngredienteRequest ingredienteRequest) {
         Ingrediente result = ingredienteService.createIngrediente(
                 ingredienteRequest.getNombre(),
                 ingredienteRequest.getDescripcion());
@@ -50,5 +53,25 @@ public class IngredientesController {
         return ResponseEntity
                 .created(URI.create("/ingredientes/" + result.getId()))
                 .body(result);
+    }
+
+    /**
+     * Updates the required name and description of an ingredient.
+     */
+    @PutMapping("/{ingredienteId}")
+    public ResponseEntity<Ingrediente> updateIngrediente(@PathVariable("ingredienteId") Long ingredienteId,
+            @Valid @RequestBody IngredienteRequest ingredienteRequest) {
+        Ingrediente result = ingredienteService.updateIngrediente(ingredienteId, ingredienteRequest.getNombre(),
+                ingredienteRequest.getDescripcion());
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Deletes an ingredient when no dish recipe references it.
+     */
+    @DeleteMapping("/{ingredienteId}")
+    public ResponseEntity<Void> deleteIngrediente(@PathVariable("ingredienteId") Long ingredienteId) {
+        ingredienteService.deleteIngrediente(ingredienteId);
+        return ResponseEntity.noContent().build();
     }
 }

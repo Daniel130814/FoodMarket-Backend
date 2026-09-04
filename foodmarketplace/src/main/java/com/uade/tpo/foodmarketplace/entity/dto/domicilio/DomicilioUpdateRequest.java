@@ -1,28 +1,31 @@
 package com.uade.tpo.foodmarketplace.entity.dto.domicilio;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 
+/**
+ * Contains the address data a user may modify without changing its owner.
+ */
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class DomicilioRequest {
+public class DomicilioUpdateRequest {
+
     @NotBlank
     private String calle;
+
     @NotBlank
     private String numero;
+
     private String piso;
     private String departamento;
+
     @NotBlank
     private String ciudad;
+
     @NotBlank
     private String provincia;
+
     @NotBlank
     private String codigoPostal;
+
     private String indicacionesEntrega;
-    @NotNull
-    private Long usuarioId;
 }

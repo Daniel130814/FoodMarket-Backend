@@ -9,12 +9,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
 import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.entity.dto.user.UserRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.user.UserUpdateRequest;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserDuplicateException;
 import com.uade.tpo.foodmarketplace.service.user.UserService;
 
@@ -42,7 +45,7 @@ public class UsersController {
     }
 
     @PostMapping("createUser")
-    public ResponseEntity<User> createUser(@RequestBody UserRequest userRequest)
+    public ResponseEntity<User> createUser(@Valid @RequestBody UserRequest userRequest)
             throws UserDuplicateException {
         User result = userService.createUser(
                 userRequest.getNombre(),
@@ -53,5 +56,14 @@ public class UsersController {
         return ResponseEntity
                 .created(URI.create("/users/" + result.getId()))
                 .body(result);
+    }
+
+    /**
+     * Updates user profile data without permitting a role change.
+     */
+    @PutMapping("/{userId}")
+    public ResponseEntity<User> updateUser(@PathVariable("userId") Long userId,
+            @Valid @RequestBody UserUpdateRequest userRequest) {
+        return ResponseEntity.ok(userService.updateUser(userId, userRequest));
     }
 }
