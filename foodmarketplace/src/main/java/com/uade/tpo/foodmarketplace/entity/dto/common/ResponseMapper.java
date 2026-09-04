@@ -18,6 +18,8 @@ import com.uade.tpo.foodmarketplace.entity.dto.pago.PagoResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.IngredientePlatoResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.resena.ResenaResponse;
+import com.uade.tpo.foodmarketplace.entity.dto.user.UserResponse;
+import com.uade.tpo.foodmarketplace.entity.user.User;
 
 public final class ResponseMapper {
 
@@ -61,5 +63,12 @@ public final class ResponseMapper {
     public static ChefProfileResponse chefProfile(ChefProfile profile, BigDecimal reputacion) {
         return new ChefProfileResponse(profile.getId(), profile.getUser().getId(), profile.getBiografia(), profile.getEspecialidad(),
                 profile.getFotoUrl(), profile.getDescripcion(), reputacion);
+    }
+
+    /**
+     * Convierte una entidad User en una respuesta segura sin relaciones ni futuros datos sensibles.
+     */
+    public static UserResponse user(User user) {
+        return new UserResponse(user.getId(), user.getNombre(), user.getApellido(), user.getEmail(), user.getRole());
     }
 }

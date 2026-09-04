@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
-import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.entity.dto.user.UserRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.user.UserResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.user.UserUpdateRequest;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserDuplicateException;
 import com.uade.tpo.foodmarketplace.service.user.UserService;
@@ -28,14 +28,20 @@ public class UsersController {
     @Autowired
     private UserService userService;
 
+    /**
+     * Devuelve usuarios como DTOs seguros para no exponer directamente la entidad JPA.
+     */
     @GetMapping
-    public ResponseEntity<List<User>> getUsers() {
+    public ResponseEntity<List<UserResponse>> getUsers() {
         return ResponseEntity.ok(userService.getUsers());
     }
 
+    /**
+     * Devuelve la información pública de un usuario cuando existe.
+     */
     @GetMapping("/{userId}")
-    public ResponseEntity<User> getUserById(@PathVariable("userId") Long userId) {
-        Optional<User> user = userService.getUserById(userId);
+    public ResponseEntity<UserResponse> getUserById(@PathVariable("userId") Long userId) {
+        Optional<UserResponse> user = userService.getUserById(userId);
 
         if (user.isPresent()) {
             return ResponseEntity.ok(user.get());
@@ -44,17 +50,20 @@ public class UsersController {
         return ResponseEntity.notFound().build();
     }
 
+    /**
+     * Crea un usuario y devuelve solamente los datos seguros definidos por UserResponse.
+     */
     @PostMapping("createUser")
-    public ResponseEntity<User> createUser(@Valid @RequestBody UserRequest userRequest)
+    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserRequest userRequest)
             throws UserDuplicateException {
-        User result = userService.createUser(
+        UserResponse result = userService.createUser(
                 userRequest.getNombre(),
                 userRequest.getApellido(),
                 userRequest.getEmail(),
                 userRequest.getRole());
 
         return ResponseEntity
-                .created(URI.create("/users/" + result.getId()))
+                .created(URI.create("/users/" + result.id()))
                 .body(result);
     }
 
@@ -62,7 +71,7 @@ public class UsersController {
      * Actualiza los datos de perfil de un usuario sin permitir cambiar su rol.
      */
     @PutMapping("/{userId}")
-    public ResponseEntity<User> updateUser(@PathVariable("userId") Long userId,
+    public ResponseEntity<UserResponse> updateUser(@PathVariable("userId") Long userId,
             @Valid @RequestBody UserUpdateRequest userRequest) {
         return ResponseEntity.ok(userService.updateUser(userId, userRequest));
     }
