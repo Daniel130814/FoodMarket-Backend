@@ -13,7 +13,7 @@ public interface ResenaRepository extends JpaRepository<Resena, Long> {
     boolean existsByClienteIdAndPlatoId(Long clienteId, Long platoId);
 
     /**
-     * Indicates whether a dish has reviews that must be kept as historical data.
+     * Indica si un plato tiene reseñas que deben conservarse como datos históricos.
      */
     boolean existsByPlatoId(Long platoId);
 

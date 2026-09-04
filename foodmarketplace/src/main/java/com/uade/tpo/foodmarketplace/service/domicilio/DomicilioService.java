@@ -19,12 +19,12 @@ public interface DomicilioService {
             Long usuarioId);
 
     /**
-     * Updates address fields without changing the user that owns the address.
+     * Actualiza los campos de domicilio sin cambiar el usuario que lo posee.
      */
     Domicilio updateDomicilio(Long domicilioId, DomicilioUpdateRequest request);
 
     /**
-     * Deletes an address when it has not been used by an order.
+     * Elimina un domicilio cuando no fue utilizado por una orden.
      */
     void deleteDomicilio(Long domicilioId);
 }

@@ -45,11 +45,11 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     /**
-     * Updates a category after verifying its existence and description uniqueness.
+     * Actualiza una categoría después de verificar su existencia y la unicidad de su descripción.
      */
     @Override
     public Category updateCategory(Long categoryId, String description) {
-        // The entity is loaded first so JPA updates the existing row instead of inserting one.
+        // La entidad se carga primero para que JPA actualice la fila existente en vez de insertar una nueva.
         Category category = categoryRepository.findById(categoryId).orElseThrow(CategoryNotFoundException::new);
         if (categoryRepository.existsByDescriptionIgnoreCaseAndIdNot(description, categoryId)) {
             throw new CategoryDuplicateException();
@@ -60,7 +60,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     /**
-     * Deletes an unused category while preserving the integrity of dish-category relations.
+     * Elimina una categoría sin uso preservando la integridad de las relaciones plato-categoría.
      */
     @Override
     public void deleteCategory(Long categoryId) {

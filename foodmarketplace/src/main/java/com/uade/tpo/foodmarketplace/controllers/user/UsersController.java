@@ -59,7 +59,7 @@ public class UsersController {
     }
 
     /**
-     * Updates user profile data without permitting a role change.
+     * Actualiza los datos de perfil de un usuario sin permitir cambiar su rol.
      */
     @PutMapping("/{userId}")
     public ResponseEntity<User> updateUser(@PathVariable("userId") Long userId,

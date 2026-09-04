@@ -23,6 +23,11 @@ import com.uade.tpo.foodmarketplace.exceptions.ingrediente.IngredienteNotFoundEx
 import com.uade.tpo.foodmarketplace.exceptions.ingrediente.IngredienteDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.pago.PagoNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.order.PedidoNotFoundException;
+import com.uade.tpo.foodmarketplace.exceptions.order.SubPedidoNotFoundException;
+import com.uade.tpo.foodmarketplace.exceptions.order.InvalidOrderStateException;
+import com.uade.tpo.foodmarketplace.exceptions.order.InvalidSubPedidoStateException;
+import com.uade.tpo.foodmarketplace.exceptions.order.OrderCancelledException;
+import com.uade.tpo.foodmarketplace.exceptions.pago.InvalidPagoStateException;
 import com.uade.tpo.foodmarketplace.exceptions.plato.PlatoNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.resena.ResenaDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.resena.ResenaNotFoundException;
@@ -39,14 +44,16 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
-    @ExceptionHandler({ ResenaDuplicateException.class, ResourceInUseException.class })
+    @ExceptionHandler({ ResenaDuplicateException.class, ResourceInUseException.class, InvalidOrderStateException.class,
+            InvalidSubPedidoStateException.class, InvalidPagoStateException.class, OrderCancelledException.class })
     ResponseEntity<ApiError> conflict(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
     @ExceptionHandler({ UserNotFoundException.class, PlatoNotFoundException.class, PedidoNotFoundException.class,
             PagoNotFoundException.class, DomicilioNotFoundException.class, IngredienteNotFoundException.class,
-            CategoryNotFoundException.class, ResenaNotFoundException.class, ChefProfileNotFoundException.class })
+            CategoryNotFoundException.class, ResenaNotFoundException.class, ChefProfileNotFoundException.class,
+            SubPedidoNotFoundException.class })
     ResponseEntity<ApiError> notFound(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }

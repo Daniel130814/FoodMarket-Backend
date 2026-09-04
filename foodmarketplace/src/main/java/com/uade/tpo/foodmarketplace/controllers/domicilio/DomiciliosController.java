@@ -70,7 +70,7 @@ public class DomiciliosController {
     }
 
     /**
-     * Updates an address while deliberately keeping its current user owner.
+     * Actualiza un domicilio conservando deliberadamente su usuario propietario actual.
      */
     @PutMapping("/{domicilioId}")
     public ResponseEntity<Domicilio> updateDomicilio(@PathVariable("domicilioId") Long domicilioId,
@@ -79,7 +79,7 @@ public class DomiciliosController {
     }
 
     /**
-     * Deletes an address that has not been recorded in an order.
+     * Elimina un domicilio que no fue registrado en una orden.
      */
     @DeleteMapping("/{domicilioId}")
     public ResponseEntity<Void> deleteDomicilio(@PathVariable("domicilioId") Long domicilioId) {

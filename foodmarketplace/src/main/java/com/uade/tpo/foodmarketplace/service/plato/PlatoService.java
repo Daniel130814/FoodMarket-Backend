@@ -15,12 +15,12 @@ public interface PlatoService {
     Plato createPlato(PlatoRequest request);
 
     /**
-     * Updates the editable data, categories, and ingredients of an existing dish.
+     * Actualiza los datos editables, categorías e ingredientes de un plato existente.
      */
     Plato updatePlato(Long platoId, PlatoRequest request);
 
     /**
-     * Deletes a dish or pauses it when historical records still reference it.
+     * Elimina un plato o lo pausa cuando los registros históricos aún lo referencian.
      */
     void deletePlato(Long platoId);
 }

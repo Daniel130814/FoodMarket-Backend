@@ -1,7 +1,7 @@
 package com.uade.tpo.foodmarketplace.exceptions.chefprofile;
 
 /**
- * Signals that the requested chef profile does not exist.
+ * Indica que el perfil de chef solicitado no existe.
  */
 public class ChefProfileNotFoundException extends RuntimeException {
 

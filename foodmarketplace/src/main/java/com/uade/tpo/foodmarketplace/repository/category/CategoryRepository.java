@@ -6,7 +6,7 @@ public interface CategoryRepository extends JpaRepository<Category,Long>{
     boolean existsByDescriptionIgnoreCase(String description);
 
     /**
-     * Checks whether another category already uses the supplied description.
+     * Comprueba si otra categoría ya utiliza la descripción indicada.
      */
     boolean existsByDescriptionIgnoreCaseAndIdNot(String description, Long id);
 }

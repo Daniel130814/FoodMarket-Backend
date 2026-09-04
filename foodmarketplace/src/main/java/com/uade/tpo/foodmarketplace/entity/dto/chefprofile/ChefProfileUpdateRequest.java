@@ -3,7 +3,7 @@ package com.uade.tpo.foodmarketplace.entity.dto.chefprofile;
 import lombok.Data;
 
 /**
- * Contains the editable presentation fields of a chef profile.
+ * Contiene los campos de presentación editables de un perfil de chef.
  */
 @Data
 public class ChefProfileUpdateRequest {

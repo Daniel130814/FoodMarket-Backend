@@ -7,12 +7,12 @@ import com.uade.tpo.foodmarketplace.entity.user.User;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     /**
-     * Checks whether an email is already registered, ignoring case.
+     * Comprueba si un email ya está registrado, sin distinguir mayúsculas.
      */
     boolean existsByEmailIgnoreCase(String email);
 
     /**
-     * Checks whether another user already uses the supplied email.
+     * Comprueba si otro usuario ya utiliza el email indicado.
      */
     boolean existsByEmailIgnoreCaseAndIdNot(String email, Long id);
 }

@@ -16,7 +16,7 @@ public interface UserService {
     User createUser(String nombre, String apellido, String email, Role role);
 
     /**
-     * Updates a user's personal data while retaining the assigned role.
+     * Actualiza los datos personales de un usuario conservando el rol asignado.
      */
     User updateUser(Long userId, UserUpdateRequest request);
 }

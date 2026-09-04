@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 /**
- * Contains user profile data that can be edited without changing the role.
+ * Contiene los datos de perfil que pueden editarse sin cambiar el rol.
  */
 @Data
 public class UserUpdateRequest {

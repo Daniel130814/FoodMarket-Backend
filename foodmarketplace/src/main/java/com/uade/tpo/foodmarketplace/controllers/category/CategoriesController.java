@@ -58,7 +58,7 @@ public class CategoriesController {
     }
 
     /**
-     * Updates the description of a category identified by the URL id.
+     * Actualiza la descripción de una categoría identificada por el id de la URL.
      */
     @PutMapping("/{categoryId}")
     public ResponseEntity<Category> updateCategory(@PathVariable("categoryId") Long categoryId,
@@ -68,7 +68,7 @@ public class CategoriesController {
     }
 
     /**
-     * Deletes a category only when it is not assigned to a dish.
+     * Elimina una categoría únicamente cuando no está asignada a un plato.
      */
     @DeleteMapping("/{categoryId}")
     public ResponseEntity<Void> deleteCategory(@PathVariable("categoryId") Long categoryId) {

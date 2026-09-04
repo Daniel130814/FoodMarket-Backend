@@ -15,4 +15,9 @@ public interface OrderService {
     Order createOrder(OrderRequest request);
 
     Order cancelarOrder(Long orderId);
+
+    /**
+     * Deriva y persiste el estado general de la orden a partir de sus subpedidos de chef.
+     */
+    Order recalcularEstadoDesdeSubPedidos(Order order);
 }

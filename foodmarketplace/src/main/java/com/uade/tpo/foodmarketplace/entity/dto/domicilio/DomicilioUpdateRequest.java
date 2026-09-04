@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 /**
- * Contains the address data a user may modify without changing its owner.
+ * Contiene los datos de domicilio que un usuario puede modificar sin cambiar su propietario.
  */
 @Data
 public class DomicilioUpdateRequest {

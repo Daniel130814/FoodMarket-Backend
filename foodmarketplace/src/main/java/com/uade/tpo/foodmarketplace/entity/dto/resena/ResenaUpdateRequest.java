@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
- * Contains the fields that can be corrected in an existing review.
+ * Contiene los campos que pueden corregirse en una reseña existente.
  */
 @Data
 public class ResenaUpdateRequest {

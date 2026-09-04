@@ -14,7 +14,7 @@ public interface DetallePedidoRepository extends JpaRepository<DetallePedido, Lo
             com.uade.tpo.foodmarketplace.entity.order.EstadoPedido estado);
 
     /**
-     * Indicates whether a dish is part of any historical order detail.
+     * Indica si un plato forma parte de algún detalle histórico de orden.
      */
     boolean existsByPlatoId(Long platoId);
 }

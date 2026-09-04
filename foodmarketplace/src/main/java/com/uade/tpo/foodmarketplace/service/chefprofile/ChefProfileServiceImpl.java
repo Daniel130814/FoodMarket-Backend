@@ -66,11 +66,11 @@ public class ChefProfileServiceImpl implements ChefProfileService {
     }
 
     /**
-     * Updates descriptive profile fields while preserving the associated chef user.
+     * Actualiza los campos descriptivos del perfil preservando el usuario chef asociado.
      */
     @Override
     public ChefProfile updateChefProfile(Long id, ChefProfileUpdateRequest request) {
-        // Both records are checked to avoid updating a profile with an invalid associated chef.
+        // Se verifican ambos registros para evitar actualizar un perfil con un chef asociado inválido.
         ChefProfile profile = chefProfileRepository.findById(id)
                 .orElseThrow(ChefProfileNotFoundException::new);
         User user = userRepository.findById(profile.getUser().getId()).orElseThrow(UserNotFoundException::new);

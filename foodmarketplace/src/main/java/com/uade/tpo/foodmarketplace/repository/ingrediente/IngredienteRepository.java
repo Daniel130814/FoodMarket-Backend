@@ -9,17 +9,17 @@ import com.uade.tpo.foodmarketplace.entity.ingrediente.Ingrediente;
 public interface IngredienteRepository extends JpaRepository<Ingrediente, Long> {
 
     /**
-     * Checks whether an ingredient name is already registered, ignoring case.
+     * Comprueba si un nombre de ingrediente ya está registrado, sin distinguir mayúsculas.
      */
     boolean existsByNombreIgnoreCase(String nombre);
 
     /**
-     * Checks whether another ingredient already uses the supplied name.
+     * Comprueba si otro ingrediente ya utiliza el nombre indicado.
      */
     boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long id);
 
     /**
-     * Indicates whether the ingredient participates in at least one dish recipe.
+     * Indica si el ingrediente participa en al menos una receta de plato.
      */
     @Query("select case when count(pi) > 0 then true else false end "
             + "from PlatoIngrediente pi where pi.ingrediente.id = :ingredienteId")

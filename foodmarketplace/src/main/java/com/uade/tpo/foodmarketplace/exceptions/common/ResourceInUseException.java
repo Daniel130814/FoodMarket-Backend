@@ -1,7 +1,7 @@
 package com.uade.tpo.foodmarketplace.exceptions.common;
 
 /**
- * Signals that a resource cannot be removed because another record references it.
+ * Indica que un recurso no puede eliminarse porque otro registro lo referencia.
  */
 public class ResourceInUseException extends RuntimeException {
 

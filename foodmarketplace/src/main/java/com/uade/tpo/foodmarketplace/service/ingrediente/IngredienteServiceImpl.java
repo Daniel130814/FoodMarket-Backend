@@ -42,11 +42,11 @@ public class IngredienteServiceImpl implements IngredienteService {
     }
 
     /**
-     * Updates an ingredient after checking that its name remains unique.
+     * Actualiza un ingrediente después de comprobar que su nombre siga siendo único.
      */
     @Override
     public Ingrediente updateIngrediente(Long ingredienteId, String nombre, String descripcion) {
-        // Loading the ingredient guarantees that the update keeps the original identifier.
+        // Cargar el ingrediente garantiza que la actualización conserve el identificador original.
         Ingrediente ingrediente = ingredienteRepository.findById(ingredienteId)
                 .orElseThrow(IngredienteNotFoundException::new);
         if (ingredienteRepository.existsByNombreIgnoreCaseAndIdNot(nombre, ingredienteId)) {
@@ -59,7 +59,7 @@ public class IngredienteServiceImpl implements IngredienteService {
     }
 
     /**
-     * Deletes an ingredient only when no recipe references it.
+     * Elimina un ingrediente únicamente cuando ninguna receta lo referencia.
      */
     @Override
     public void deleteIngrediente(Long ingredienteId) {

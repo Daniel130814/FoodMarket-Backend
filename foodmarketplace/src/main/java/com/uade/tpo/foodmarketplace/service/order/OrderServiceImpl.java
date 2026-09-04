@@ -22,6 +22,7 @@ import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.entity.dto.order.OrderRequest;
 import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.exceptions.order.CantidadInvalidaException;
+import com.uade.tpo.foodmarketplace.exceptions.order.InvalidOrderStateException;
 import com.uade.tpo.foodmarketplace.exceptions.plato.PlatoNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.order.PedidoNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.domicilio.DomicilioNoPerteneceAlUsuarioException;
@@ -57,6 +58,9 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findById(orderId);
     }
 
+    /**
+     * Crea una orden pendiente y agrupa sus detalles en un subpedido por chef.
+     */
     @Override
     @Transactional
     public Order createOrder(OrderRequest request)
@@ -111,22 +115,63 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.save(order);
     }
 
+    /**
+     * Cancela cada subpedido no finalizado y repone stock solo para esos ítems cancelados.
+     */
     @Override
     @Transactional
     public Order cancelarOrder(Long orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(PedidoNotFoundException::new);
-        if (order.getEstado() == EstadoPedido.CANCELADO) return order;
-        if (order.getSubPedidos().stream().anyMatch(s -> s.getEstado() == EstadoPedido.ENTREGADO)) {
-            throw new BusinessRuleException("No se puede cancelar una orden con subpedidos entregados");
+        if (order.getEstado() == EstadoPedido.CANCELADO) {
+            return order;
         }
-        order.getSubPedidos().forEach(sub -> {
+        if (order.getEstado() == EstadoPedido.ENTREGADO
+                || order.getSubPedidos().stream().allMatch(sub -> sub.getEstado() == EstadoPedido.ENTREGADO)) {
+            throw new InvalidOrderStateException("No se puede cancelar una orden completamente entregada");
+        }
+
+        order.getSubPedidos().stream()
+                .filter(sub -> sub.getEstado() != EstadoPedido.ENTREGADO && sub.getEstado() != EstadoPedido.CANCELADO)
+                .forEach(sub -> {
+            // Los subpedidos entregados no se modifican; solo los ítems cancelados devuelven stock.
             sub.getDetalles().forEach(detalle -> {
-                Plato plato = platoRepository.findByIdForUpdate(detalle.getPlato().getId()).orElseThrow(PlatoNotFoundException::new);
+                Plato plato = platoRepository.findByIdForUpdate(detalle.getPlato().getId())
+                        .orElseThrow(PlatoNotFoundException::new);
                 plato.setStockDisponible(plato.getStockDisponible() + detalle.getCantidad());
             });
             sub.setEstado(EstadoPedido.CANCELADO);
         });
         order.setEstado(EstadoPedido.CANCELADO);
-        return order;
+        return orderRepository.save(order);
+    }
+
+    /**
+     * Calcula el estado general utilizando el estado activo más avanzado de los subpedidos.
+     * Una orden parcialmente entregada permanece ENVIADO hasta que todos los subpedidos estén ENTREGADO.
+     */
+    @Override
+    public Order recalcularEstadoDesdeSubPedidos(Order order) {
+        if (order.getEstado() == EstadoPedido.CANCELADO) {
+            return order;
+        }
+        if (order.getSubPedidos().isEmpty()) {
+            order.setEstado(EstadoPedido.PENDIENTE);
+            return orderRepository.save(order);
+        }
+        if (order.getSubPedidos().stream().allMatch(sub -> sub.getEstado() == EstadoPedido.ENTREGADO)) {
+            order.setEstado(EstadoPedido.ENTREGADO);
+        } else if (order.getSubPedidos().stream().anyMatch(sub -> sub.getEstado() == EstadoPedido.ENVIADO
+                || sub.getEstado() == EstadoPedido.ENTREGADO)) {
+            // No existe un estado mixto en el enum, por lo que una entrega parcial se representa como ENVIADO.
+            order.setEstado(EstadoPedido.ENVIADO);
+        } else if (order.getSubPedidos().stream().anyMatch(sub -> sub.getEstado() == EstadoPedido.EN_PREPARACION)) {
+            order.setEstado(EstadoPedido.EN_PREPARACION);
+        } else if (order.getSubPedidos().stream().anyMatch(sub -> sub.getEstado() == EstadoPedido.CONFIRMADO)) {
+            order.setEstado(EstadoPedido.CONFIRMADO);
+        } else {
+            order.setEstado(EstadoPedido.PENDIENTE);
+        }
+
+        return orderRepository.save(order);
     }
 }

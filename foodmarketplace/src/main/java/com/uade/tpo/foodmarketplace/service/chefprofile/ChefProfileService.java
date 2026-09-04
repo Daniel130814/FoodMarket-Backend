@@ -12,7 +12,7 @@ public interface ChefProfileService {
     Optional<ChefProfile> getChefProfileById(Long id);
     ChefProfile createChefProfile(ChefProfileRequest request);
     /**
-     * Updates the presentation data of an existing chef profile.
+     * Actualiza los datos de presentación de un perfil de chef existente.
      */
     ChefProfile updateChefProfile(Long id, ChefProfileUpdateRequest request);
     BigDecimal getReputacion(Long chefId);

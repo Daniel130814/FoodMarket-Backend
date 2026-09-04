@@ -7,7 +7,7 @@ import com.uade.tpo.foodmarketplace.entity.order.Order;
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     /**
-     * Indicates whether a delivery address is referenced by an order.
+     * Indica si un domicilio de entrega está referenciado por una orden.
      */
     boolean existsByDomicilioEntregaId(Long domicilioId);
 }

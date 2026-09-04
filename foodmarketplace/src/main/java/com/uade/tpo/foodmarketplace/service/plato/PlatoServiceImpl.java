@@ -68,19 +68,19 @@ public class PlatoServiceImpl implements PlatoService {
     }
 
     /**
-     * Updates a dish and replaces its category and ingredient associations atomically.
+     * Actualiza un plato y reemplaza atómicamente sus asociaciones de categorías e ingredientes.
      */
     @Override
     @Transactional
     public Plato updatePlato(Long platoId, PlatoRequest request) {
-        // The current entity is loaded before changing collections so orphan removal works correctly.
+        // La entidad actual se carga antes de cambiar colecciones para que orphanRemoval funcione correctamente.
         Plato plato = platoRepository.findById(platoId).orElseThrow(PlatoNotFoundException::new);
         actualizarDatosPlato(plato, request, false);
         return platoRepository.save(plato);
     }
 
     /**
-     * Removes an unused dish or pauses it to keep order and review history intact.
+     * Elimina un plato sin uso o lo pausa para conservar el historial de órdenes y reseñas.
      */
     @Override
     @Transactional
@@ -89,7 +89,7 @@ public class PlatoServiceImpl implements PlatoService {
         boolean tieneHistorial = detallePedidoRepository.existsByPlatoId(platoId)
                 || resenaRepository.existsByPlatoId(platoId);
         if (tieneHistorial) {
-            // Soft deletion retains foreign-key references used by completed orders and reviews.
+            // El borrado lógico conserva las referencias de claves foráneas usadas por órdenes y reseñas completadas.
             plato.setEstado(EstadoPlato.PAUSADO);
             platoRepository.save(plato);
             return;
@@ -99,7 +99,7 @@ public class PlatoServiceImpl implements PlatoService {
     }
 
     /**
-     * Copies request data into a dish and rebuilds the associations that belong to it.
+     * Copia los datos de la solicitud en un plato y reconstruye las asociaciones que le pertenecen.
      */
     private void actualizarDatosPlato(Plato plato, PlatoRequest request, boolean esNuevo) {
         User chef = obtenerChef(request.getChefId());
@@ -115,7 +115,7 @@ public class PlatoServiceImpl implements PlatoService {
         }
         plato.setChef(chef);
 
-        // Resolve every requested category so an invalid id cannot silently be persisted.
+        // Se resuelve cada categoría solicitada para que un id inválido no se persista silenciosamente.
         List<Category> categorias = obtenerCategorias(request.getCategoriasIds());
         plato.getCategorias().clear();
         plato.getCategorias().addAll(categorias);
@@ -126,7 +126,7 @@ public class PlatoServiceImpl implements PlatoService {
     }
 
     /**
-     * Obtains a chef user and verifies that the selected user has the CHEF role.
+     * Obtiene un usuario chef y verifica que el usuario seleccionado tenga el rol CHEF.
      */
     private User obtenerChef(Long chefId) {
         User chef = userRepository.findById(chefId).orElseThrow(UserNotFoundException::new);
@@ -137,7 +137,7 @@ public class PlatoServiceImpl implements PlatoService {
     }
 
     /**
-     * Resolves the requested category identifiers to managed category entities.
+     * Resuelve los identificadores de categorías solicitados en entidades de categoría gestionadas.
      */
     private List<Category> obtenerCategorias(List<Long> categoriasIds) {
         if (categoriasIds == null) {
@@ -150,7 +150,7 @@ public class PlatoServiceImpl implements PlatoService {
     }
 
     /**
-     * Recreates the dish recipe while rejecting repeated ingredients in the request.
+     * Recrea la receta del plato rechazando ingredientes repetidos en la solicitud.
      */
     private void agregarIngredientes(Plato plato, PlatoRequest request) {
         if (request.getIngredientes() == null) {

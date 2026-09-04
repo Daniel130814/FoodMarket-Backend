@@ -14,12 +14,12 @@ public interface IngredienteService {
     Ingrediente createIngrediente(String nombre, String descripcion);
 
     /**
-     * Updates the name and description of an existing ingredient.
+     * Actualiza el nombre y la descripción de un ingrediente existente.
      */
     Ingrediente updateIngrediente(Long ingredienteId, String nombre, String descripcion);
 
     /**
-     * Deletes an ingredient when it is not part of a dish recipe.
+     * Elimina un ingrediente cuando no forma parte de una receta de plato.
      */
     void deleteIngrediente(Long ingredienteId);
 }

@@ -1,7 +1,7 @@
 package com.uade.tpo.foodmarketplace.exceptions.ingrediente;
 
 /**
- * Signals that an ingredient name must be unique regardless of letter case.
+ * Indica que el nombre de un ingrediente debe ser único sin distinguir mayúsculas.
  */
 public class IngredienteDuplicateException extends RuntimeException {
 

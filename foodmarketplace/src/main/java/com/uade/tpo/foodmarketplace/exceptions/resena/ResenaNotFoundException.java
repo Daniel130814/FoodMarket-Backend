@@ -1,7 +1,7 @@
 package com.uade.tpo.foodmarketplace.exceptions.resena;
 
 /**
- * Signals that the requested review does not exist.
+ * Indica que la reseña solicitada no existe.
  */
 public class ResenaNotFoundException extends RuntimeException {
 

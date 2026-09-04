@@ -56,7 +56,7 @@ public class IngredientesController {
     }
 
     /**
-     * Updates the required name and description of an ingredient.
+     * Actualiza el nombre y la descripción obligatorios de un ingrediente.
      */
     @PutMapping("/{ingredienteId}")
     public ResponseEntity<Ingrediente> updateIngrediente(@PathVariable("ingredienteId") Long ingredienteId,
@@ -67,7 +67,7 @@ public class IngredientesController {
     }
 
     /**
-     * Deletes an ingredient when no dish recipe references it.
+     * Elimina un ingrediente cuando ninguna receta de plato lo referencia.
      */
     @DeleteMapping("/{ingredienteId}")
     public ResponseEntity<Void> deleteIngrediente(@PathVariable("ingredienteId") Long ingredienteId) {

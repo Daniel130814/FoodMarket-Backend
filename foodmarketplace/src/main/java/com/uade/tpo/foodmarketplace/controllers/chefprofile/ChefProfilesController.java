@@ -61,7 +61,7 @@ public class ChefProfilesController {
     }
 
     /**
-     * Updates the descriptive data of a chef profile without changing its user.
+     * Actualiza los datos descriptivos de un perfil de chef sin cambiar su usuario.
      */
     @PutMapping("/{id}")
     public ResponseEntity<ChefProfileResponse> update(@PathVariable Long id,

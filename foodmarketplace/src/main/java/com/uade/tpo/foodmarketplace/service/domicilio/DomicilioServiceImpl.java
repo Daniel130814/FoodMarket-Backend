@@ -70,11 +70,11 @@ public class DomicilioServiceImpl implements DomicilioService {
     }
 
     /**
-     * Updates the fields of an existing address while retaining its current owner.
+     * Actualiza los campos de un domicilio existente conservando su propietario actual.
      */
     @Override
     public Domicilio updateDomicilio(Long domicilioId, DomicilioUpdateRequest request) {
-        // No user is accepted here, preventing an address from being reassigned accidentally.
+        // Aquí no se recibe un usuario para impedir que un domicilio sea reasignado accidentalmente.
         Domicilio domicilio = domicilioRepository.findById(domicilioId).orElseThrow(DomicilioNotFoundException::new);
         domicilio.setCalle(request.getCalle());
         domicilio.setNumero(request.getNumero());
@@ -89,7 +89,7 @@ public class DomicilioServiceImpl implements DomicilioService {
     }
 
     /**
-     * Deletes an address only if there are no orders that require it as history.
+     * Elimina un domicilio solo si no hay órdenes que lo requieran como historial.
      */
     @Override
     public void deleteDomicilio(Long domicilioId) {

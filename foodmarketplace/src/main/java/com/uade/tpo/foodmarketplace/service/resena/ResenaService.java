@@ -17,12 +17,12 @@ public interface ResenaService {
     Resena createResena(Integer calificacion, String comentario, Long clienteId, Long platoId);
 
     /**
-     * Updates the score and comment of an existing review.
+     * Actualiza la calificación y el comentario de una reseña existente.
      */
     Resena updateResena(Long resenaId, ResenaUpdateRequest request);
 
     /**
-     * Deletes an existing review.
+     * Elimina una reseña existente.
      */
     void deleteResena(Long resenaId);
 }

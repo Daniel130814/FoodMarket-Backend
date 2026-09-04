@@ -48,7 +48,7 @@ public class PlatosController {
     }
 
     /**
-     * Updates the editable data and recipe relationships of an existing dish.
+     * Actualiza los datos editables y las relaciones de receta de un plato existente.
      */
     @PutMapping("/{platoId}")
     public ResponseEntity<PlatoResponse> updatePlato(@PathVariable("platoId") Long platoId,
@@ -57,7 +57,7 @@ public class PlatosController {
     }
 
     /**
-     * Deletes a dish or pauses it when historical data still references it.
+     * Elimina un plato o lo pausa cuando los datos históricos aún lo referencian.
      */
     @DeleteMapping("/{platoId}")
     public ResponseEntity<Void> deletePlato(@PathVariable("platoId") Long platoId) {

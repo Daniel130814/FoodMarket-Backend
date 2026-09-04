@@ -88,7 +88,7 @@ public class ResenaServiceImpl implements ResenaService {
     }
 
     /**
-     * Updates a review without repeating the purchase validation required at creation time.
+     * Actualiza una reseña sin repetir la validación de compra requerida al crearla.
      */
     @Override
     public Resena updateResena(Long resenaId, ResenaUpdateRequest request) {
@@ -96,7 +96,7 @@ public class ResenaServiceImpl implements ResenaService {
             throw new CalificacionInvalidaException();
         }
 
-        // The existing review retains its original customer, dish, and creation date.
+        // La reseña existente conserva su cliente, plato y fecha de creación originales.
         Resena resena = resenaRepository.findById(resenaId).orElseThrow(ResenaNotFoundException::new);
         resena.setCalificacion(request.getCalificacion());
         resena.setComentario(request.getComentario());
@@ -104,7 +104,7 @@ public class ResenaServiceImpl implements ResenaService {
     }
 
     /**
-     * Deletes a review after confirming that it exists.
+     * Elimina una reseña después de confirmar que existe.
      */
     @Override
     public void deleteResena(Long resenaId) {

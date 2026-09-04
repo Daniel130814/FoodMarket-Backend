@@ -58,7 +58,7 @@ public class ResenasController {
     }
 
     /**
-     * Updates only the rating and comment of an existing review.
+     * Actualiza únicamente la calificación y el comentario de una reseña existente.
      */
     @PutMapping("/{resenaId}")
     public ResponseEntity<ResenaResponse> updateResena(@PathVariable("resenaId") Long resenaId,
@@ -67,7 +67,7 @@ public class ResenasController {
     }
 
     /**
-     * Deletes an existing review.
+     * Elimina una reseña existente.
      */
     @DeleteMapping("/{resenaId}")
     public ResponseEntity<Void> deleteResena(@PathVariable("resenaId") Long resenaId) {

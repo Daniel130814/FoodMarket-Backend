@@ -11,13 +11,17 @@ import org.springframework.transaction.annotation.Transactional;
 import com.uade.tpo.foodmarketplace.entity.pago.EstadoPago;
 import com.uade.tpo.foodmarketplace.entity.pago.MedioPago;
 import com.uade.tpo.foodmarketplace.entity.order.Order;
+import com.uade.tpo.foodmarketplace.entity.order.EstadoPedido;
 import com.uade.tpo.foodmarketplace.entity.pago.Pago;
 import com.uade.tpo.foodmarketplace.exceptions.pago.PagoDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.pago.PagoNotFoundException;
+import com.uade.tpo.foodmarketplace.exceptions.pago.InvalidPagoStateException;
 import com.uade.tpo.foodmarketplace.exceptions.order.PedidoNotFoundException;
+import com.uade.tpo.foodmarketplace.exceptions.order.OrderCancelledException;
 import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.repository.order.OrderRepository;
 import com.uade.tpo.foodmarketplace.repository.pago.PagoRepository;
+import com.uade.tpo.foodmarketplace.service.order.OrderService;
 
 @Service
 public class PagoServiceImpl implements PagoService {
@@ -27,6 +31,9 @@ public class PagoServiceImpl implements PagoService {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private OrderService orderService;
 
     @Override
     public List<Pago> getPagos() {
@@ -38,18 +45,25 @@ public class PagoServiceImpl implements PagoService {
         return pagoRepository.findById(pagoId);
     }
 
+    /**
+     * Crea un nuevo intento de pago pendiente salvo que la orden esté cancelada o bloqueada para pagos.
+     */
     @Override
     @Transactional
     public Pago createPago(MedioPago medioPago, Long pedidoId) {
         Order pedido = orderRepository.findById(pedidoId)
                 .orElseThrow(PedidoNotFoundException::new);
 
+        // Una orden cancelada es terminal y no puede recibir nuevos intentos de pago.
+        if (pedido.getEstado() == EstadoPedido.CANCELADO) {
+            throw new OrderCancelledException();
+        }
         if (pedido.isPagoBloqueado() || pagoRepository.countByPedidoIdAndEstado(pedidoId, EstadoPago.RECHAZADO) >= 5) {
             pedido.setPagoBloqueado(true);
             throw new BusinessRuleException("Los intentos de pago para esta orden estan bloqueados");
         }
         if (pagoRepository.existsByPedidoIdAndEstado(pedidoId, EstadoPago.APROBADO)) {
-            throw new BusinessRuleException("La orden ya posee un pago aprobado");
+            throw new InvalidPagoStateException("La orden ya posee un pago aprobado");
         }
 
         Pago pago = new Pago();
@@ -62,27 +76,74 @@ public class PagoServiceImpl implements PagoService {
         return pagoRepository.save(pago);
     }
 
+    /**
+     * Aplica una transición de pago válida y confirma la orden atómicamente cuando se aprueba.
+     */
     @Override
     @Transactional
     public Pago actualizarEstadoPago(Long pagoId, EstadoPago estado) {
         Pago pago = pagoRepository.findById(pagoId)
                 .orElseThrow(PagoNotFoundException::new);
+        Order pedido = pago.getPedido();
 
-        if (estado == EstadoPago.APROBADO && pagoRepository.existsByPedidoIdAndEstado(pago.getPedido().getId(), EstadoPago.APROBADO)
+        // Se valida antes de cambiar datos para que un intento rechazado o reembolsado nunca se reabra.
+        validarTransicion(pago.getEstado(), estado);
+        if (estado == EstadoPago.APROBADO && pedido.getEstado() == EstadoPedido.CANCELADO) {
+            throw new OrderCancelledException();
+        }
+        if (estado == EstadoPago.APROBADO && pagoRepository.existsByPedidoIdAndEstado(pedido.getId(), EstadoPago.APROBADO)
                 && pago.getEstado() != EstadoPago.APROBADO) {
-            throw new BusinessRuleException("La orden ya posee un pago aprobado");
+            throw new InvalidPagoStateException("La orden ya posee un pago aprobado");
         }
         if (estado == EstadoPago.RECHAZADO && pago.getEstado() != EstadoPago.RECHAZADO) {
-            long rechazados = pagoRepository.countByPedidoIdAndEstado(pago.getPedido().getId(), EstadoPago.RECHAZADO);
-            if (rechazados >= 5) throw new BusinessRuleException("Se alcanzo el maximo de intentos rechazados");
-            if (rechazados + 1 == 5) pago.getPedido().setPagoBloqueado(true);
+            long rechazados = pagoRepository.countByPedidoIdAndEstado(pedido.getId(), EstadoPago.RECHAZADO);
+            if (rechazados >= 5) {
+                throw new BusinessRuleException("Se alcanzo el maximo de intentos rechazados");
+            }
+            if (rechazados + 1 == 5) {
+                pedido.setPagoBloqueado(true);
+            }
         }
         pago.setEstado(estado);
 
-        if (estado == EstadoPago.APROBADO && pago.getFechaPago() == null) {
-            pago.setFechaPago(LocalDateTime.now());
+        if (estado == EstadoPago.APROBADO) {
+            if (pago.getFechaPago() == null) {
+                pago.setFechaPago(LocalDateTime.now());
+            }
+            confirmarOrderYSubPedidosPendientes(pedido);
         }
 
         return pagoRepository.save(pago);
+    }
+
+    /**
+     * Confirma una orden pendiente y sus subpedidos pendientes después de su primer pago aprobado.
+     */
+    private void confirmarOrderYSubPedidosPendientes(Order pedido) {
+        if (pedido.getEstado() != EstadoPedido.PENDIENTE) {
+            return;
+        }
+
+        // Cada chef comienza en CONFIRMADO al mismo tiempo una vez que la compra fue pagada.
+        pedido.getSubPedidos().stream()
+                .filter(subPedido -> subPedido.getEstado() == EstadoPedido.PENDIENTE)
+                .forEach(subPedido -> subPedido.setEstado(EstadoPedido.CONFIRMADO));
+        orderService.recalcularEstadoDesdeSubPedidos(pedido);
+    }
+
+    /**
+     * Valida el flujo finito de pagos: pendiente a aprobado/rechazado y luego aprobado a reembolsado.
+     */
+    private void validarTransicion(EstadoPago estadoActual, EstadoPago nuevoEstado) {
+        boolean esValida = switch (estadoActual) {
+            case PENDIENTE -> nuevoEstado == EstadoPago.APROBADO || nuevoEstado == EstadoPago.RECHAZADO;
+            case APROBADO -> nuevoEstado == EstadoPago.REEMBOLSADO;
+            case RECHAZADO, REEMBOLSADO -> false;
+        };
+
+        if (!esValida) {
+            throw new InvalidPagoStateException(
+                    "Transicion invalida de " + estadoActual + " a " + nuevoEstado + " para el pago");
+        }
     }
 }

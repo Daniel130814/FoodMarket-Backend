@@ -11,7 +11,7 @@ import com.uade.tpo.foodmarketplace.entity.plato.Plato;
 public interface PlatoRepository extends JpaRepository<Plato, Long> {
 
     /**
-     * Indicates whether a category is assigned to at least one dish.
+     * Indica si una categoría está asignada a al menos un plato.
      */
     boolean existsByCategoriasId(Long categoryId);
 
