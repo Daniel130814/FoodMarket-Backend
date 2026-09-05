@@ -13,6 +13,8 @@ public interface SubPedidoChefRepository extends JpaRepository<SubPedidoChef, Lo
      */
     List<SubPedidoChef> findByPedidoId(Long pedidoId);
 
+    List<SubPedidoChef> findByPedidoIdAndChefId(Long pedidoId, Long chefId);
+
     /**
      * Obtiene los subpedidos asignados a un chef específico.
      */

@@ -15,8 +15,7 @@ public interface DomicilioService {
     List<Domicilio> getDomiciliosByUsuarioId(Long usuarioId);
 
     Domicilio createDomicilio(String calle, String numero, String piso, String departamento,
-            String ciudad, String provincia, String codigoPostal, String indicacionesEntrega,
-            Long usuarioId);
+            String ciudad, String provincia, String codigoPostal, String indicacionesEntrega);
 
     /**
      * Actualiza los campos de domicilio sin cambiar el usuario que lo posee.

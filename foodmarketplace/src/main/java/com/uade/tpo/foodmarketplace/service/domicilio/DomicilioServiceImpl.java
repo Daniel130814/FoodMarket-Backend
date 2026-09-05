@@ -11,10 +11,9 @@ import com.uade.tpo.foodmarketplace.entity.dto.domicilio.DomicilioUpdateRequest;
 import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.exceptions.common.ResourceInUseException;
 import com.uade.tpo.foodmarketplace.exceptions.domicilio.DomicilioNotFoundException;
-import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.domicilio.DomicilioRepository;
 import com.uade.tpo.foodmarketplace.repository.order.OrderRepository;
-import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
+import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 
 @Service
 public class DomicilioServiceImpl implements DomicilioService {
@@ -23,37 +22,40 @@ public class DomicilioServiceImpl implements DomicilioService {
     private DomicilioRepository domicilioRepository;
 
     @Autowired
-    private UserRepository userRepository;
+    private AuthenticatedUserService authenticatedUserService;
 
     @Autowired
     private OrderRepository orderRepository;
 
     @Override
     public List<Domicilio> getDomicilios() {
-        return domicilioRepository.findAll();
+        User currentUser = authenticatedUserService.getCurrentUser();
+        return authenticatedUserService.isAdmin(currentUser)
+                ? domicilioRepository.findAll()
+                : domicilioRepository.findByUsuarioId(currentUser.getId());
     }
 
     @Override
     public Optional<Domicilio> getDomicilioById(Long domicilioId) {
-        return domicilioRepository.findById(domicilioId);
+        User currentUser = authenticatedUserService.getCurrentUser();
+        Optional<Domicilio> domicilio = domicilioRepository.findById(domicilioId);
+        domicilio.ifPresent(value -> authenticatedUserService.requireOwnerOrAdmin(
+                currentUser, value.getUsuario().getId()));
+        return domicilio;
     }
 
     @Override
     public List<Domicilio> getDomiciliosByUsuarioId(Long usuarioId) {
-        if (!userRepository.existsById(usuarioId)) {
-            throw new UserNotFoundException();
-        }
-
+        User currentUser = authenticatedUserService.getCurrentUser();
+        authenticatedUserService.requireOwnerOrAdmin(currentUser, usuarioId);
         return domicilioRepository.findByUsuarioId(usuarioId);
     }
 
     @Override
     public Domicilio createDomicilio(String calle, String numero, String piso, String departamento,
-            String ciudad, String provincia, String codigoPostal, String indicacionesEntrega,
-            Long usuarioId) {
+            String ciudad, String provincia, String codigoPostal, String indicacionesEntrega) {
 
-        User usuario = userRepository.findById(usuarioId)
-                .orElseThrow(UserNotFoundException::new);
+        User usuario = authenticatedUserService.getCurrentUser();
 
         Domicilio domicilio = new Domicilio();
         domicilio.setCalle(calle);
@@ -76,6 +78,8 @@ public class DomicilioServiceImpl implements DomicilioService {
     public Domicilio updateDomicilio(Long domicilioId, DomicilioUpdateRequest request) {
         // Aquí no se recibe un usuario para impedir que un domicilio sea reasignado accidentalmente.
         Domicilio domicilio = domicilioRepository.findById(domicilioId).orElseThrow(DomicilioNotFoundException::new);
+        authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(),
+                domicilio.getUsuario().getId());
         domicilio.setCalle(request.getCalle());
         domicilio.setNumero(request.getNumero());
         domicilio.setPiso(request.getPiso());
@@ -94,6 +98,8 @@ public class DomicilioServiceImpl implements DomicilioService {
     @Override
     public void deleteDomicilio(Long domicilioId) {
         Domicilio domicilio = domicilioRepository.findById(domicilioId).orElseThrow(DomicilioNotFoundException::new);
+        authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(),
+                domicilio.getUsuario().getId());
         if (orderRepository.existsByDomicilioEntregaId(domicilioId)) {
             throw new ResourceInUseException("No se puede eliminar un domicilio asociado a un pedido");
         }

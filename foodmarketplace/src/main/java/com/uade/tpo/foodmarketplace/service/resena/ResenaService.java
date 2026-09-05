@@ -14,7 +14,7 @@ public interface ResenaService {
 
     List<Resena> getResenasByPlatoId(Long platoId);
 
-    Resena createResena(Integer calificacion, String comentario, Long clienteId, Long platoId);
+    Resena createResena(Integer calificacion, String comentario, Long platoId);
 
     /**
      * Actualiza la calificación y el comentario de una reseña existente.

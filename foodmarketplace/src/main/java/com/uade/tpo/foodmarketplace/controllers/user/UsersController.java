@@ -60,6 +60,7 @@ public class UsersController {
                 userRequest.getNombre(),
                 userRequest.getApellido(),
                 userRequest.getEmail(),
+                userRequest.getPassword(),
                 userRequest.getRole());
 
         return ResponseEntity
@@ -74,5 +75,15 @@ public class UsersController {
     public ResponseEntity<UserResponse> updateUser(@PathVariable("userId") Long userId,
             @Valid @RequestBody UserUpdateRequest userRequest) {
         return ResponseEntity.ok(userService.updateUser(userId, userRequest));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> me() {
+        return ResponseEntity.ok(userService.getCurrentUser());
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateMe(@Valid @RequestBody UserUpdateRequest request) {
+        return ResponseEntity.ok(userService.updateCurrentUser(request));
     }
 }

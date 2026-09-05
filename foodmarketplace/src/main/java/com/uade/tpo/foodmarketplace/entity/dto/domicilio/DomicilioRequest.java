@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 @Data
 @NoArgsConstructor
@@ -23,6 +22,4 @@ public class DomicilioRequest {
     @NotBlank
     private String codigoPostal;
     private String indicacionesEntrega;
-    @NotNull
-    private Long usuarioId;
 }

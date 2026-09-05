@@ -17,8 +17,5 @@ public class ResenaRequest {
     private String comentario;
 
     @NotNull
-    private Long clienteId;
-
-    @NotNull
     private Long platoId;
 }

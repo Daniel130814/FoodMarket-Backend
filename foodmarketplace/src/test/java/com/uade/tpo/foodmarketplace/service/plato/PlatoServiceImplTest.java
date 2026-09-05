@@ -34,7 +34,7 @@ import com.uade.tpo.foodmarketplace.repository.ingrediente.IngredienteRepository
 import com.uade.tpo.foodmarketplace.repository.order.DetallePedidoRepository;
 import com.uade.tpo.foodmarketplace.repository.plato.PlatoRepository;
 import com.uade.tpo.foodmarketplace.repository.resena.ResenaRepository;
-import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
+import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 
 @ExtendWith(MockitoExtension.class)
 class PlatoServiceImplTest {
@@ -48,7 +48,7 @@ class PlatoServiceImplTest {
     @Mock
     private PlatoRepository platoRepository;
     @Mock
-    private UserRepository userRepository;
+    private AuthenticatedUserService authenticatedUserService;
     @Mock
     private CategoryRepository categoryRepository;
     @Mock
@@ -115,19 +115,24 @@ class PlatoServiceImplTest {
         assertSame(relacionExistente, plato.getIngredientes().getFirst());
         assertEquals(new BigDecimal("250"), relacionExistente.getCantidad());
         verify(platoRepository, never()).save(any());
-        verifyNoInteractions(userRepository, categoryRepository, ingredienteRepository);
+        verifyNoInteractions(categoryRepository, ingredienteRepository);
     }
 
     private void prepararActualizacion(Plato plato) {
         User chef = new User();
         chef.setRole(Role.CHEF);
+        chef.setId(CHEF_ID);
         when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.of(plato));
-        when(userRepository.findById(CHEF_ID)).thenReturn(Optional.of(chef));
+        when(authenticatedUserService.getCurrentUser()).thenReturn(chef);
         when(platoRepository.save(plato)).thenReturn(plato);
     }
 
     private Plato platoCon(Ingrediente ingrediente, BigDecimal cantidad) {
         Plato plato = new Plato();
+        User chef = new User();
+        chef.setId(CHEF_ID);
+        chef.setRole(Role.CHEF);
+        plato.setChef(chef);
         plato.getIngredientes().add(relacion(plato, ingrediente, cantidad));
         return plato;
     }
@@ -161,7 +166,6 @@ class PlatoServiceImplTest {
         request.setNombre("Plato de prueba");
         request.setPrecio(BigDecimal.TEN);
         request.setStockDisponible(1);
-        request.setChefId(CHEF_ID);
         request.setCategoriasIds(List.<Long>of());
         request.setIngredientes(List.of(ingredientes));
         return request;

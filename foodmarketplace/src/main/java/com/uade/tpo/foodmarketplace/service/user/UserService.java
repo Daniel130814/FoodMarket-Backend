@@ -22,10 +22,14 @@ public interface UserService {
     /**
      * Crea un usuario y lo devuelve mediante un DTO seguro.
      */
-    UserResponse createUser(String nombre, String apellido, String email, Role role);
+    UserResponse createUser(String nombre, String apellido, String email, String password, Role role);
 
     /**
      * Actualiza los datos personales de un usuario conservando el rol asignado.
      */
     UserResponse updateUser(Long userId, UserUpdateRequest request);
+
+    UserResponse getCurrentUser();
+
+    UserResponse updateCurrentUser(UserUpdateRequest request);
 }

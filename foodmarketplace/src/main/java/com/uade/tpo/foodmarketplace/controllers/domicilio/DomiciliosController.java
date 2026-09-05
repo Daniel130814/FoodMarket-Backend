@@ -61,8 +61,7 @@ public class DomiciliosController {
                 domicilioRequest.getCiudad(),
                 domicilioRequest.getProvincia(),
                 domicilioRequest.getCodigoPostal(),
-                domicilioRequest.getIndicacionesEntrega(),
-                domicilioRequest.getUsuarioId());
+                domicilioRequest.getIndicacionesEntrega());
 
         return ResponseEntity
                 .created(URI.create("/domicilios/" + result.getId()))

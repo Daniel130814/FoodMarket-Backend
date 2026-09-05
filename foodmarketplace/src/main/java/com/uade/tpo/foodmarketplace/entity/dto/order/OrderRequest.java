@@ -13,8 +13,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class OrderRequest {
     @NotNull
-    private Long userId;
-    @NotNull
     private Long domicilioEntregaId;
     @NotEmpty
     @Valid

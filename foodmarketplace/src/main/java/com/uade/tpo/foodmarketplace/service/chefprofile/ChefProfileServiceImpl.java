@@ -18,6 +18,7 @@ import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.chefprofile.ChefProfileRepository;
 import com.uade.tpo.foodmarketplace.repository.resena.ResenaRepository;
 import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
+import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 
 @Service
 public class ChefProfileServiceImpl implements ChefProfileService {
@@ -25,12 +26,14 @@ public class ChefProfileServiceImpl implements ChefProfileService {
     private final ChefProfileRepository chefProfileRepository;
     private final UserRepository userRepository;
     private final ResenaRepository resenaRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public ChefProfileServiceImpl(ChefProfileRepository chefProfileRepository, UserRepository userRepository,
-            ResenaRepository resenaRepository) {
+            ResenaRepository resenaRepository, AuthenticatedUserService authenticatedUserService) {
         this.chefProfileRepository = chefProfileRepository;
         this.userRepository = userRepository;
         this.resenaRepository = resenaRepository;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     @Override
@@ -45,7 +48,7 @@ public class ChefProfileServiceImpl implements ChefProfileService {
 
     @Override
     public ChefProfile createChefProfile(ChefProfileRequest request) {
-        User user = userRepository.findById(request.getUserId()).orElseThrow(UserNotFoundException::new);
+        User user = authenticatedUserService.getCurrentUser();
 
         if (user.getRole() != Role.CHEF) {
             throw new BusinessRuleException("El perfil solo puede pertenecer a un usuario CHEF");
@@ -73,6 +76,8 @@ public class ChefProfileServiceImpl implements ChefProfileService {
         // Se verifican ambos registros para evitar actualizar un perfil con un chef asociado inválido.
         ChefProfile profile = chefProfileRepository.findById(id)
                 .orElseThrow(ChefProfileNotFoundException::new);
+        authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(),
+                profile.getUser().getId());
         User user = userRepository.findById(profile.getUser().getId()).orElseThrow(UserNotFoundException::new);
         if (user.getRole() != Role.CHEF) {
             throw new BusinessRuleException("El perfil solo puede pertenecer a un usuario CHEF");

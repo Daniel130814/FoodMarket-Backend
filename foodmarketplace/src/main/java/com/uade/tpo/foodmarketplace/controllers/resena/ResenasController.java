@@ -49,7 +49,6 @@ public class ResenasController {
         var result = resenaService.createResena(
                 resenaRequest.getCalificacion(),
                 resenaRequest.getComentario(),
-                resenaRequest.getClienteId(),
                 resenaRequest.getPlatoId());
 
         return ResponseEntity

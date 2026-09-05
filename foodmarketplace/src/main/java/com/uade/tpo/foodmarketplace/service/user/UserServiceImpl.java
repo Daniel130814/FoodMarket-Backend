@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.entity.user.Role;
@@ -14,12 +15,19 @@ import com.uade.tpo.foodmarketplace.entity.dto.user.UserUpdateRequest;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
+import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 
 @Service
 public class UserServiceImpl implements UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AuthenticatedUserService authenticatedUserService;
 
     /**
      * Obtiene todos los usuarios y convierte cada entidad en un DTO seguro de respuesta.
@@ -42,7 +50,7 @@ public class UserServiceImpl implements UserService {
      * Crea un usuario y devuelve su DTO público en lugar de la entidad persistida.
      */
     @Override
-    public UserResponse createUser(String nombre, String apellido, String email, Role role)
+    public UserResponse createUser(String nombre, String apellido, String email, String password, Role role)
             throws UserDuplicateException {
 
         // Una consulta derivada evita cargar todos los usuarios solo para validar un email único.
@@ -53,8 +61,9 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setNombre(nombre);
         user.setApellido(apellido);
-        user.setEmail(email);
-        user.setRole(role == null ? Role.CLIENTE : role);
+        user.setEmail(email.trim().toLowerCase(java.util.Locale.ROOT));
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRole(role);
 
         return ResponseMapper.user(userRepository.save(user));
     }
@@ -74,5 +83,15 @@ public class UserServiceImpl implements UserService {
         user.setApellido(request.getApellido());
         user.setEmail(request.getEmail());
         return ResponseMapper.user(userRepository.save(user));
+    }
+
+    @Override
+    public UserResponse getCurrentUser() {
+        return ResponseMapper.user(authenticatedUserService.getCurrentUser());
+    }
+
+    @Override
+    public UserResponse updateCurrentUser(UserUpdateRequest request) {
+        return updateUser(authenticatedUserService.getCurrentUser().getId(), request);
     }
 }

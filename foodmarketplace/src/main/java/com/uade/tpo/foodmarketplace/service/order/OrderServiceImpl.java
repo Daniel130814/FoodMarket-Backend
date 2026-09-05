@@ -30,8 +30,8 @@ import com.uade.tpo.foodmarketplace.exceptions.domicilio.DomicilioNotFoundExcept
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.domicilio.DomicilioRepository;
 import com.uade.tpo.foodmarketplace.repository.order.OrderRepository;
-import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
 import com.uade.tpo.foodmarketplace.repository.plato.PlatoRepository;
+import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -40,7 +40,7 @@ public class OrderServiceImpl implements OrderService {
     private OrderRepository orderRepository;
 
     @Autowired
-    private UserRepository userRepository;
+    private AuthenticatedUserService authenticatedUserService;
 
     @Autowired
     private DomicilioRepository domicilioRepository;
@@ -50,12 +50,18 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<Order> getOrders() {
-        return orderRepository.findAll();
+        User currentUser = authenticatedUserService.getCurrentUser();
+        return authenticatedUserService.isAdmin(currentUser)
+                ? orderRepository.findAll()
+                : orderRepository.findByUserId(currentUser.getId());
     }
 
     @Override
     public Optional<Order> getOrderById(Long orderId) {
-        return orderRepository.findById(orderId);
+        User currentUser = authenticatedUserService.getCurrentUser();
+        Optional<Order> order = orderRepository.findById(orderId);
+        order.ifPresent(value -> authenticatedUserService.requireOwnerOrAdmin(currentUser, value.getUser().getId()));
+        return order;
     }
 
     /**
@@ -65,8 +71,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public Order createOrder(OrderRequest request)
             throws UserNotFoundException {
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(UserNotFoundException::new);
+        User user = authenticatedUserService.getCurrentUser();
         if (user.getRole() != com.uade.tpo.foodmarketplace.entity.user.Role.CLIENTE) {
             throw new BusinessRuleException("La compra debe corresponder a un cliente");
         }
@@ -74,7 +79,7 @@ public class OrderServiceImpl implements OrderService {
         Domicilio domicilioEntrega = domicilioRepository.findById(request.getDomicilioEntregaId())
                 .orElseThrow(DomicilioNotFoundException::new);
 
-        if (!domicilioEntrega.getUsuario().getId().equals(request.getUserId())) {
+        if (!domicilioEntrega.getUsuario().getId().equals(user.getId())) {
             throw new DomicilioNoPerteneceAlUsuarioException();
         }
         Order order = new Order();
@@ -122,6 +127,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public Order cancelarOrder(Long orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(PedidoNotFoundException::new);
+        authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(), order.getUser().getId());
         if (order.getEstado() == EstadoPedido.CANCELADO) {
             return order;
         }

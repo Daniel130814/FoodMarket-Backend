@@ -22,6 +22,8 @@ import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.repository.order.OrderRepository;
 import com.uade.tpo.foodmarketplace.repository.pago.PagoRepository;
 import com.uade.tpo.foodmarketplace.service.order.OrderService;
+import com.uade.tpo.foodmarketplace.entity.user.User;
+import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 
 @Service
 public class PagoServiceImpl implements PagoService {
@@ -35,14 +37,24 @@ public class PagoServiceImpl implements PagoService {
     @Autowired
     private OrderService orderService;
 
+    @Autowired
+    private AuthenticatedUserService authenticatedUserService;
+
     @Override
     public List<Pago> getPagos() {
-        return pagoRepository.findAll();
+        User currentUser = authenticatedUserService.getCurrentUser();
+        return authenticatedUserService.isAdmin(currentUser)
+                ? pagoRepository.findAll()
+                : pagoRepository.findByPedidoUserId(currentUser.getId());
     }
 
     @Override
     public Optional<Pago> getPagoById(Long pagoId) {
-        return pagoRepository.findById(pagoId);
+        User currentUser = authenticatedUserService.getCurrentUser();
+        Optional<Pago> pago = pagoRepository.findById(pagoId);
+        pago.ifPresent(value -> authenticatedUserService.requireOwnerOrAdmin(
+                currentUser, value.getPedido().getUser().getId()));
+        return pago;
     }
 
     /**
@@ -53,6 +65,8 @@ public class PagoServiceImpl implements PagoService {
     public Pago createPago(MedioPago medioPago, Long pedidoId) {
         Order pedido = orderRepository.findById(pedidoId)
                 .orElseThrow(PedidoNotFoundException::new);
+        authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(),
+                pedido.getUser().getId());
 
         // Una orden cancelada es terminal y no puede recibir nuevos intentos de pago.
         if (pedido.getEstado() == EstadoPedido.CANCELADO) {

@@ -17,6 +17,8 @@ import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.order.OrderRepository;
 import com.uade.tpo.foodmarketplace.repository.order.SubPedidoChefRepository;
 import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
+import com.uade.tpo.foodmarketplace.entity.user.User;
+import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 
 @Service
 public class SubPedidoChefServiceImpl implements SubPedidoChefService {
@@ -25,13 +27,16 @@ public class SubPedidoChefServiceImpl implements SubPedidoChefService {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final OrderService orderService;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public SubPedidoChefServiceImpl(SubPedidoChefRepository subPedidoChefRepository, OrderRepository orderRepository,
-            UserRepository userRepository, OrderService orderService) {
+            UserRepository userRepository, OrderService orderService,
+            AuthenticatedUserService authenticatedUserService) {
         this.subPedidoChefRepository = subPedidoChefRepository;
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.orderService = orderService;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     /**
@@ -39,7 +44,11 @@ public class SubPedidoChefServiceImpl implements SubPedidoChefService {
      */
     @Override
     public Optional<SubPedidoChef> getSubPedidoById(Long subPedidoId) {
-        return subPedidoChefRepository.findById(subPedidoId);
+        User currentUser = authenticatedUserService.getCurrentUser();
+        Optional<SubPedidoChef> subPedido = subPedidoChefRepository.findById(subPedidoId);
+        subPedido.ifPresent(value -> authenticatedUserService.requireOwnerOrAdmin(
+                currentUser, value.getChef().getId()));
+        return subPedido;
     }
 
     /**
@@ -51,7 +60,10 @@ public class SubPedidoChefServiceImpl implements SubPedidoChefService {
             throw new PedidoNotFoundException();
         }
 
-        return subPedidoChefRepository.findByPedidoId(orderId);
+        User currentUser = authenticatedUserService.getCurrentUser();
+        return authenticatedUserService.isAdmin(currentUser)
+                ? subPedidoChefRepository.findByPedidoId(orderId)
+                : subPedidoChefRepository.findByPedidoIdAndChefId(orderId, currentUser.getId());
     }
 
     /**
@@ -63,6 +75,8 @@ public class SubPedidoChefServiceImpl implements SubPedidoChefService {
             throw new UserNotFoundException();
         }
 
+        User currentUser = authenticatedUserService.getCurrentUser();
+        authenticatedUserService.requireOwnerOrAdmin(currentUser, chefId);
         return subPedidoChefRepository.findByChefId(chefId);
     }
 
@@ -74,6 +88,8 @@ public class SubPedidoChefServiceImpl implements SubPedidoChefService {
     public SubPedidoChef actualizarEstado(Long subPedidoId, EstadoPedido nuevoEstado) {
         SubPedidoChef subPedido = subPedidoChefRepository.findById(subPedidoId)
                 .orElseThrow(SubPedidoNotFoundException::new);
+        authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(),
+                subPedido.getChef().getId());
         Order order = subPedido.getPedido();
 
         // Una compra pendiente no puede entrar en preparación antes de que un pago la confirme.

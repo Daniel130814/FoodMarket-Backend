@@ -30,9 +30,6 @@ public class PlatoRequest {
     private EstadoPlato estado;
     private String imagenUrl;
 
-    @NotNull
-    private Long chefId;
-
     private List<Long> categoriasIds;
 
     @Valid

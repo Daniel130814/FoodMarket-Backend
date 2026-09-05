@@ -16,20 +16,20 @@ import com.uade.tpo.foodmarketplace.entity.plato.EstadoPlato;
 import com.uade.tpo.foodmarketplace.entity.ingrediente.Ingrediente;
 import com.uade.tpo.foodmarketplace.entity.plato.Plato;
 import com.uade.tpo.foodmarketplace.entity.plato.PlatoIngrediente;
-import com.uade.tpo.foodmarketplace.entity.user.Role;
 import com.uade.tpo.foodmarketplace.entity.user.User;
+import com.uade.tpo.foodmarketplace.entity.user.Role;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoRequest;
 import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
+import org.springframework.security.access.AccessDeniedException;
 import com.uade.tpo.foodmarketplace.exceptions.category.CategoryNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.ingrediente.IngredienteNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.plato.PlatoNotFoundException;
-import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.category.CategoryRepository;
 import com.uade.tpo.foodmarketplace.repository.ingrediente.IngredienteRepository;
 import com.uade.tpo.foodmarketplace.repository.order.DetallePedidoRepository;
 import com.uade.tpo.foodmarketplace.repository.plato.PlatoRepository;
 import com.uade.tpo.foodmarketplace.repository.resena.ResenaRepository;
-import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
+import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 
 @Service
 public class PlatoServiceImpl implements PlatoService {
@@ -38,7 +38,7 @@ public class PlatoServiceImpl implements PlatoService {
     private PlatoRepository platoRepository;
 
     @Autowired
-    private UserRepository userRepository;
+    private AuthenticatedUserService authenticatedUserService;
 
     @Autowired
     private CategoryRepository categoryRepository;
@@ -64,7 +64,12 @@ public class PlatoServiceImpl implements PlatoService {
 
     @Override
     public Plato createPlato(PlatoRequest request) {
+        User chef = authenticatedUserService.getCurrentUser();
+        if (chef.getRole() != Role.CHEF) {
+            throw new AccessDeniedException("Solo un CHEF puede crear platos");
+        }
         Plato plato = new Plato();
+        plato.setChef(chef);
         actualizarDatosPlato(plato, request, true);
 
         return platoRepository.save(plato);
@@ -78,6 +83,8 @@ public class PlatoServiceImpl implements PlatoService {
     public Plato updatePlato(Long platoId, PlatoRequest request) {
         // La entidad actual se carga antes de cambiar colecciones para que orphanRemoval funcione correctamente.
         Plato plato = platoRepository.findById(platoId).orElseThrow(PlatoNotFoundException::new);
+        User currentUser = authenticatedUserService.getCurrentUser();
+        authenticatedUserService.requireOwnerOrAdmin(currentUser, plato.getChef().getId());
         actualizarDatosPlato(plato, request, false);
         return platoRepository.save(plato);
     }
@@ -89,6 +96,8 @@ public class PlatoServiceImpl implements PlatoService {
     @Transactional
     public void deletePlato(Long platoId) {
         Plato plato = platoRepository.findById(platoId).orElseThrow(PlatoNotFoundException::new);
+        User currentUser = authenticatedUserService.getCurrentUser();
+        authenticatedUserService.requireOwnerOrAdmin(currentUser, plato.getChef().getId());
         boolean tieneHistorial = detallePedidoRepository.existsByPlatoId(platoId)
                 || resenaRepository.existsByPlatoId(platoId);
         if (tieneHistorial) {
@@ -107,7 +116,6 @@ public class PlatoServiceImpl implements PlatoService {
     private void actualizarDatosPlato(Plato plato, PlatoRequest request, boolean esNuevo) {
         validarIngredientesSinDuplicados(request);
 
-        User chef = obtenerChef(request.getChefId());
         plato.setNombre(request.getNombre());
         plato.setDescripcion(request.getDescripcion());
         plato.setImagenUrl(request.getImagenUrl());
@@ -118,7 +126,6 @@ public class PlatoServiceImpl implements PlatoService {
         } else if (esNuevo) {
             plato.setEstado(EstadoPlato.BORRADOR);
         }
-        plato.setChef(chef);
 
         // Se resuelve cada categoría solicitada para que un id inválido no se persista silenciosamente.
         List<Category> categorias = obtenerCategorias(request.getCategoriasIds());
@@ -126,17 +133,6 @@ public class PlatoServiceImpl implements PlatoService {
         plato.getCategorias().addAll(categorias);
 
         actualizarIngredientes(plato, request);
-    }
-
-    /**
-     * Obtiene un usuario chef y verifica que el usuario seleccionado tenga el rol CHEF.
-     */
-    private User obtenerChef(Long chefId) {
-        User chef = userRepository.findById(chefId).orElseThrow(UserNotFoundException::new);
-        if (chef.getRole() != Role.CHEF) {
-            throw new BusinessRuleException("El usuario indicado no tiene rol CHEF");
-        }
-        return chef;
     }
 
     /**

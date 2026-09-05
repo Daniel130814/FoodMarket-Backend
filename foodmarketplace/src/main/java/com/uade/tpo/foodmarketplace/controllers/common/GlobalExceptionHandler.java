@@ -5,6 +5,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -61,6 +63,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DomicilioNoPerteneceAlUsuarioException.class)
     ResponseEntity<ApiError> forbidden(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    ResponseEntity<ApiError> accessDenied(AccessDeniedException ex, WebRequest request) {
+        return error(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    ResponseEntity<ApiError> unauthorized(BadCredentialsException ex, WebRequest request) {
+        return error(HttpStatus.UNAUTHORIZED, "Credenciales inválidas", request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
