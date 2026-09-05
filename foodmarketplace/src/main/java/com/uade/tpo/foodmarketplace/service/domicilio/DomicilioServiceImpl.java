@@ -76,10 +76,21 @@ public class DomicilioServiceImpl implements DomicilioService {
      */
     @Override
     public Domicilio updateDomicilio(Long domicilioId, DomicilioUpdateRequest request) {
-        // Aquí no se recibe un usuario para impedir que un domicilio sea reasignado accidentalmente.
-        Domicilio domicilio = domicilioRepository.findById(domicilioId).orElseThrow(DomicilioNotFoundException::new);
-        authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(),
-                domicilio.getUsuario().getId());
+
+        Domicilio domicilio = domicilioRepository.findById(domicilioId)
+                .orElseThrow(DomicilioNotFoundException::new);
+
+        authenticatedUserService.requireOwnerOrAdmin(
+                authenticatedUserService.getCurrentUser(),
+                domicilio.getUsuario().getId()
+        );
+
+        if (orderRepository.existsByDomicilioEntregaId(domicilioId)) {
+            throw new ResourceInUseException(
+                    "No se puede modificar un domicilio asociado a un pedido. Cree un nuevo domicilio."
+            );
+        }
+
         domicilio.setCalle(request.getCalle());
         domicilio.setNumero(request.getNumero());
         domicilio.setPiso(request.getPiso());
