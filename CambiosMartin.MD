@@ -12,6 +12,27 @@ Ahora, si el domicilio ya fue usado en un pedido, no se puede modificar y se deb
 
 3) En `PlatoServiceImpl` y `PlatoRepository`:
 
-Antes los GET públicos devolvían platos sin importar su estado, por lo que podían aparecer borradores, pausados o agotados.
+Antes los GET públicos devolvían platos sin importar su estado, por lo que podían aparecer `BORRADOR`, `PAUSADO` o `AGOTADO`.
 
-Ahora el catálogo público y la búsqueda por ID devuelven únicamente platos con estado `PUBLICADO`.
+El cambio se hizo en `PlatoServiceImpl`, específicamente en:
+`getPlatos()`
+`getPlatoById(Long platoId)`
+
+En vez de usar `findAll()` y `findById()`, ahora llaman a consultas que filtran por `EstadoPlato.PUBLICADO`.
+
+Para eso, en `PlatoRepository` se agregaron:
+`findByEstado(EstadoPlato estado)`
+`findByIdAndEstado(Long id, EstadoPlato estado)`
+
+De esta forma, tanto el catálogo público como la búsqueda por ID devuelven únicamente platos publicados.
+
+
+4) En `OrderServiceImpl` y `PlatoServiceImpl` ajusté la lógica para que el estado del plato quede sincronizado con el stock.
+
+En `OrderServiceImpl`, metodo `createOrder()`, cuando una compra deja el stock en `0`, el plato pasa automáticamente de `PUBLICADO` a `AGOTADO`.
+
+En `OrderServiceImpl`, metodo `cancelarOrder()`, si se repone stock de un plato que estaba `AGOTADO`, vuelve automáticamente a `PUBLICADO`.
+
+En `PlatoServiceImpl`, metodo `actualizarDatosPlato()`, también se valida esa coherencia al crear o editar un plato, evitando combinaciones como `PUBLICADO` con stock `0` o `AGOTADO` con stock disponible.
+
+Los estados manuales `BORRADOR` y `PAUSADO` no se modifican automáticamente.  

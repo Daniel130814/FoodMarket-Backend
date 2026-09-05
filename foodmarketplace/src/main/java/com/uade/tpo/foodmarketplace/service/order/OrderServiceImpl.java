@@ -103,6 +103,9 @@ public class OrderServiceImpl implements OrderService {
                 throw new BusinessRuleException("Stock insuficiente para el plato " + plato.getId());
             }
             plato.setStockDisponible(plato.getStockDisponible() - item.getValue());
+            if (plato.getStockDisponible() == 0) {
+                plato.setEstado(EstadoPlato.AGOTADO);
+            }
             SubPedidoChef subPedido = subPedidosPorChef.computeIfAbsent(plato.getChef().getId(), ignored -> {
                 SubPedidoChef nuevo = new SubPedidoChef();
                 nuevo.setPedido(order); nuevo.setChef(plato.getChef()); nuevo.setEstado(EstadoPedido.PENDIENTE);
@@ -161,6 +164,12 @@ public class OrderServiceImpl implements OrderService {
                 plato.setStockDisponible(
                         plato.getStockDisponible() + detalle.getCantidad()
                 );
+
+                if (plato.getEstado() == EstadoPlato.AGOTADO
+                        && plato.getStockDisponible() > 0) {
+                    plato.setEstado(EstadoPlato.PUBLICADO);
+                }
+                
             });
 
             sub.setEstado(EstadoPedido.CANCELADO);

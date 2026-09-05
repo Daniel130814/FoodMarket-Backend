@@ -121,10 +121,28 @@ public class PlatoServiceImpl implements PlatoService {
         plato.setImagenUrl(request.getImagenUrl());
         plato.setPrecio(request.getPrecio());
         plato.setStockDisponible(request.getStockDisponible());
+
         if (request.getEstado() != null) {
-            plato.setEstado(request.getEstado());
+            if (request.getEstado() == EstadoPlato.PUBLICADO
+                    || request.getEstado() == EstadoPlato.AGOTADO) {
+
+                plato.setEstado(
+                        request.getStockDisponible() == 0
+                                ? EstadoPlato.AGOTADO
+                                : EstadoPlato.PUBLICADO
+                );
+
+            } else {
+                plato.setEstado(request.getEstado());
+            }
         } else if (esNuevo) {
             plato.setEstado(EstadoPlato.BORRADOR);
+        } else if (plato.getEstado() == EstadoPlato.PUBLICADO
+                && request.getStockDisponible() == 0) {
+            plato.setEstado(EstadoPlato.AGOTADO);
+        } else if (plato.getEstado() == EstadoPlato.AGOTADO
+                && request.getStockDisponible() > 0) {
+            plato.setEstado(EstadoPlato.PUBLICADO);
         }
 
         // Se resuelve cada categoría solicitada para que un id inválido no se persista silenciosamente.
