@@ -121,33 +121,53 @@ public class OrderServiceImpl implements OrderService {
     }
 
     /**
-     * Cancela cada subpedido no finalizado y repone stock solo para esos ítems cancelados.
+     * Cancela una orden pendiente y repone el stock de sus ítems.
      */
     @Override
     @Transactional
     public Order cancelarOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow(PedidoNotFoundException::new);
-        authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(), order.getUser().getId());
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(PedidoNotFoundException::new);
+
+        authenticatedUserService.requireOwnerOrAdmin(
+                authenticatedUserService.getCurrentUser(),
+                order.getUser().getId()
+        );
+
         if (order.getEstado() == EstadoPedido.CANCELADO) {
             return order;
         }
-        if (order.getEstado() == EstadoPedido.ENTREGADO
-                || order.getSubPedidos().stream().allMatch(sub -> sub.getEstado() == EstadoPedido.ENTREGADO)) {
-            throw new InvalidOrderStateException("No se puede cancelar una orden completamente entregada");
+
+        if (order.getEstado() != EstadoPedido.PENDIENTE) {
+            throw new InvalidOrderStateException(
+                    "Solo se pueden cancelar órdenes pendientes"
+            );
         }
 
-        order.getSubPedidos().stream()
-                .filter(sub -> sub.getEstado() != EstadoPedido.ENTREGADO && sub.getEstado() != EstadoPedido.CANCELADO)
-                .forEach(sub -> {
-            // Los subpedidos entregados no se modifican; solo los ítems cancelados devuelven stock.
+        boolean todosPendientes = order.getSubPedidos().stream()
+                .allMatch(sub -> sub.getEstado() == EstadoPedido.PENDIENTE);
+
+        if (!todosPendientes) {
+            throw new InvalidOrderStateException(
+                    "La orden contiene subpedidos que ya comenzaron a procesarse"
+            );
+        }
+
+        order.getSubPedidos().forEach(sub -> {
             sub.getDetalles().forEach(detalle -> {
                 Plato plato = platoRepository.findByIdForUpdate(detalle.getPlato().getId())
                         .orElseThrow(PlatoNotFoundException::new);
-                plato.setStockDisponible(plato.getStockDisponible() + detalle.getCantidad());
+
+                plato.setStockDisponible(
+                        plato.getStockDisponible() + detalle.getCantidad()
+                );
             });
+
             sub.setEstado(EstadoPedido.CANCELADO);
         });
+
         order.setEstado(EstadoPedido.CANCELADO);
+
         return orderRepository.save(order);
     }
 
