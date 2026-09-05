@@ -1,3 +1,5 @@
 .vscode/
 foodmarketplace/target/
+foodmarketplace/.m2/
 foodmarketplace/.mvn/wrapper/maven-wrapper.jar
+.DS_Store
