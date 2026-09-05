@@ -1,8 +1,11 @@
 package com.uade.tpo.foodmarketplace.service.plato;
 
-import java.util.List;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.HashMap;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -99,9 +102,11 @@ public class PlatoServiceImpl implements PlatoService {
     }
 
     /**
-     * Copia los datos de la solicitud en un plato y reconstruye las asociaciones que le pertenecen.
+     * Copia los datos de la solicitud en un plato y sincroniza las asociaciones que le pertenecen.
      */
     private void actualizarDatosPlato(Plato plato, PlatoRequest request, boolean esNuevo) {
+        validarIngredientesSinDuplicados(request);
+
         User chef = obtenerChef(request.getChefId());
         plato.setNombre(request.getNombre());
         plato.setDescripcion(request.getDescripcion());
@@ -120,9 +125,7 @@ public class PlatoServiceImpl implements PlatoService {
         plato.getCategorias().clear();
         plato.getCategorias().addAll(categorias);
 
-        // Clearing first lets JPA remove obsolete recipe rows through orphanRemoval.
-        plato.getIngredientes().clear();
-        agregarIngredientes(plato, request);
+        actualizarIngredientes(plato, request);
     }
 
     /**
@@ -149,28 +152,54 @@ public class PlatoServiceImpl implements PlatoService {
                 .toList();
     }
 
-    /**
-     * Recrea la receta del plato rechazando ingredientes repetidos en la solicitud.
-     */
-    private void agregarIngredientes(Plato plato, PlatoRequest request) {
+    private void actualizarIngredientes(Plato plato, PlatoRequest request) {
+        if (request.getIngredientes() == null) {
+            // Una lista ausente conserva el comportamiento previo: elimina toda la receta mediante orphanRemoval.
+            plato.getIngredientes().clear();
+            return;
+        }
+
+        Set<Long> ingredientesRecibidos = new HashSet<>();
+        Map<Long, PlatoIngrediente> relacionesExistentes = new HashMap<>();
+        for (PlatoIngrediente relacion : plato.getIngredientes()) {
+            relacionesExistentes.put(relacion.getIngrediente().getId(), relacion);
+        }
+
+        request.getIngredientes().forEach(item -> ingredientesRecibidos.add(item.getIngredienteId()));
+
+        // No borramos toda la colección: las relaciones que ya no llegan se eliminan una a una por orphanRemoval.
+        plato.getIngredientes().removeIf(relacion -> !ingredientesRecibidos.contains(relacion.getIngrediente().getId()));
+
+        request.getIngredientes().forEach(item -> {
+            PlatoIngrediente relacionExistente = relacionesExistentes.get(item.getIngredienteId());
+            if (relacionExistente != null) {
+                // Si la relación ya existe, reutilizamos la misma Entity y evitamos un INSERT duplicado.
+                relacionExistente.setCantidad(item.getCantidad());
+                relacionExistente.setUnidadMedida(item.getUnidadMedida());
+                return;
+            }
+
+            Ingrediente ingrediente = ingredienteRepository.findById(item.getIngredienteId())
+                    .orElseThrow(IngredienteNotFoundException::new);
+            PlatoIngrediente nuevaRelacion = new PlatoIngrediente();
+            nuevaRelacion.setPlato(plato);
+            nuevaRelacion.setIngrediente(ingrediente);
+            nuevaRelacion.setCantidad(item.getCantidad());
+            nuevaRelacion.setUnidadMedida(item.getUnidadMedida());
+            plato.getIngredientes().add(nuevaRelacion);
+        });
+    }
+
+    private void validarIngredientesSinDuplicados(PlatoRequest request) {
         if (request.getIngredientes() == null) {
             return;
         }
 
-        HashSet<Long> ingredientesRecibidos = new HashSet<>();
-        request.getIngredientes().forEach(item -> {
+        Set<Long> ingredientesRecibidos = new HashSet<>();
+        for (var item : request.getIngredientes()) {
             if (!ingredientesRecibidos.add(item.getIngredienteId())) {
                 throw new BusinessRuleException("Un ingrediente no puede repetirse en el mismo plato");
             }
-            Ingrediente ingrediente = ingredienteRepository.findById(item.getIngredienteId())
-                    .orElseThrow(IngredienteNotFoundException::new);
-            PlatoIngrediente relacion = new PlatoIngrediente();
-            relacion.setPlato(plato);
-            relacion.setIngrediente(ingrediente);
-            relacion.setCantidad(item.getCantidad());
-            relacion.setUnidadMedida(item.getUnidadMedida());
-            plato.getIngredientes().add(relacion);
-        });
-
+        }
     }
 }
