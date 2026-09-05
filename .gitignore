@@ -2,4 +2,5 @@
 foodmarketplace/target/
 foodmarketplace/.m2/
 foodmarketplace/.mvn/wrapper/maven-wrapper.jar
+foodmarketplace/src/main/resources/application.properties
 .DS_Store
