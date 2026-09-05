@@ -54,12 +54,12 @@ public class PlatoServiceImpl implements PlatoService {
 
     @Override
     public List<Plato> getPlatos() {
-        return platoRepository.findAll();
+        return platoRepository.findByEstado(EstadoPlato.PUBLICADO);
     }
 
     @Override
     public Optional<Plato> getPlatoById(Long platoId) {
-        return platoRepository.findById(platoId);
+        return platoRepository.findByIdAndEstado(platoId, EstadoPlato.PUBLICADO);
     }
 
     @Override

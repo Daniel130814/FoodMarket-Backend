@@ -10,3 +10,8 @@ Antes se podía editar un domicilio aunque ya estuviera asociado a pedidos, haci
 
 Ahora, si el domicilio ya fue usado en un pedido, no se puede modificar y se debe crear uno nuevo.
 
+3) En `PlatoServiceImpl` y `PlatoRepository`:
+
+Antes los GET públicos devolvían platos sin importar su estado, por lo que podían aparecer borradores, pausados o agotados.
+
+Ahora el catálogo público y la búsqueda por ID devuelven únicamente platos con estado `PUBLICADO`.
