@@ -23,4 +23,10 @@ public interface PlatoService {
      * Elimina un plato o lo pausa cuando los registros históricos aún lo referencian.
      */
     void deletePlato(Long platoId);
+
+    /** Actualiza el descuento vigente de un plato tras validar ownership. */
+    Plato actualizarDescuento(Long platoId, java.math.BigDecimal porcentaje);
+
+    /** Quita el descuento vigente de un plato sin modificar su precio base. */
+    Plato quitarDescuento(Long platoId);
 }

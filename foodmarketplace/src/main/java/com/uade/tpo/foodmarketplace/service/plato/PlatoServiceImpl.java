@@ -111,6 +111,31 @@ public class PlatoServiceImpl implements PlatoService {
     }
 
     /**
+     * Actualiza el porcentaje de descuento del plato sin alterar el precio base histórico.
+     */
+    @Override
+    @Transactional
+    public Plato actualizarDescuento(Long platoId, java.math.BigDecimal porcentaje) {
+        if (porcentaje == null || porcentaje.compareTo(java.math.BigDecimal.ZERO) < 0
+                || porcentaje.compareTo(java.math.BigDecimal.valueOf(100)) >= 0) {
+            throw new BusinessRuleException("El descuento debe ser mayor o igual a 0 y menor a 100");
+        }
+        Plato plato = platoRepository.findById(platoId).orElseThrow(PlatoNotFoundException::new);
+        authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(), plato.getChef().getId());
+        plato.setDescuentoPorcentaje(porcentaje);
+        return platoRepository.save(plato);
+    }
+
+    /**
+     * Restablece el descuento a cero; el precio base del plato se conserva intacto.
+     */
+    @Override
+    @Transactional
+    public Plato quitarDescuento(Long platoId) {
+        return actualizarDescuento(platoId, java.math.BigDecimal.ZERO);
+    }
+
+    /**
      * Copia los datos de la solicitud en un plato y sincroniza las asociaciones que le pertenecen.
      */
     private void actualizarDatosPlato(Plato plato, PlatoRequest request, boolean esNuevo) {

@@ -45,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers("/users/**").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/platos/**").hasAuthority("CHEF")
                         .requestMatchers(HttpMethod.PUT, "/platos/**").hasAnyAuthority("CHEF", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/platos/**").hasAnyAuthority("CHEF", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/platos/**").hasAnyAuthority("CHEF", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/chef-profiles/**").hasAuthority("CHEF")
                         .requestMatchers(HttpMethod.PUT, "/chef-profiles/**").hasAnyAuthority("CHEF", "ADMIN")
@@ -58,6 +59,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/pagos/**").hasAuthority("ADMIN")
                         .requestMatchers("/pagos/**").hasAnyAuthority("CLIENTE", "ADMIN")
                         .requestMatchers("/subpedidos/**").hasAnyAuthority("CHEF", "ADMIN")
+                        .requestMatchers("/carrito/**").hasAuthority("CLIENTE")
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

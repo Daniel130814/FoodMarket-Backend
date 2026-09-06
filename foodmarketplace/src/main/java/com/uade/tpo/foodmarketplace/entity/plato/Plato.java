@@ -53,6 +53,10 @@ public class Plato {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal precio;
 
+    /** Porcentaje de descuento vigente; el precio base nunca se sobrescribe. */
+    @Column(nullable = false, precision = 5, scale = 2)
+    private BigDecimal descuentoPorcentaje = BigDecimal.ZERO;
+
     @Column(nullable = false)
     private Integer stockDisponible;
 

@@ -35,13 +35,15 @@ import com.uade.tpo.foodmarketplace.exceptions.resena.ResenaDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.resena.ResenaNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
+import com.uade.tpo.foodmarketplace.exceptions.carrito.CarritoVacioException;
+import com.uade.tpo.foodmarketplace.exceptions.carrito.ItemCarritoNotFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler({ BusinessRuleException.class, CantidadInvalidaException.class,
             CalificacionInvalidaException.class, CategoryDuplicateException.class, IngredienteDuplicateException.class,
-            UserDuplicateException.class })
+            UserDuplicateException.class, CarritoVacioException.class })
     ResponseEntity<ApiError> badRequest(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
@@ -55,7 +57,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({ UserNotFoundException.class, PlatoNotFoundException.class, PedidoNotFoundException.class,
             PagoNotFoundException.class, DomicilioNotFoundException.class, IngredienteNotFoundException.class,
             CategoryNotFoundException.class, ResenaNotFoundException.class, ChefProfileNotFoundException.class,
-            SubPedidoNotFoundException.class })
+            SubPedidoNotFoundException.class, ItemCarritoNotFoundException.class })
     ResponseEntity<ApiError> notFound(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }

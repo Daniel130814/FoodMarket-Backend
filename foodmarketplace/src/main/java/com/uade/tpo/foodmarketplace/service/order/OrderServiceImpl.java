@@ -32,6 +32,7 @@ import com.uade.tpo.foodmarketplace.repository.domicilio.DomicilioRepository;
 import com.uade.tpo.foodmarketplace.repository.order.OrderRepository;
 import com.uade.tpo.foodmarketplace.repository.plato.PlatoRepository;
 import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
+import com.uade.tpo.foodmarketplace.service.plato.PrecioPlatoCalculator;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -113,8 +114,10 @@ public class OrderServiceImpl implements OrderService {
             });
             DetallePedido detalle = new DetallePedido();
             detalle.setSubPedidoChef(subPedido); detalle.setPlato(plato); detalle.setCantidad(item.getValue());
-            detalle.setPrecioUnitario(plato.getPrecio());
-            detalle.setSubtotal(plato.getPrecio().multiply(BigDecimal.valueOf(item.getValue())));
+            // El detalle congela el precio efectivo actual para que cambios futuros no alteren el historial.
+            BigDecimal precioEfectivo = PrecioPlatoCalculator.precioEfectivo(plato);
+            detalle.setPrecioUnitario(precioEfectivo);
+            detalle.setSubtotal(precioEfectivo.multiply(BigDecimal.valueOf(item.getValue())));
             subPedido.getDetalles().add(detalle);
             subPedido.setSubtotal(subPedido.getSubtotal().add(detalle.getSubtotal()));
             total = total.add(detalle.getSubtotal());

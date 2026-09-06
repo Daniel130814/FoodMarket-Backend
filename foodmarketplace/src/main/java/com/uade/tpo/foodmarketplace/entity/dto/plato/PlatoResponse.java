@@ -10,6 +10,8 @@ public record PlatoResponse(
         String descripcion,
         String imagenUrl,
         BigDecimal precio,
+        BigDecimal descuentoPorcentaje,
+        BigDecimal precioConDescuento,
         Integer stockDisponible,
         EstadoPlato estado,
         Long chefId,

@@ -17,6 +17,7 @@ import com.uade.tpo.foodmarketplace.entity.dto.order.SubPedidoChefResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.pago.PagoResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.IngredientePlatoResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoResponse;
+import com.uade.tpo.foodmarketplace.service.plato.PrecioPlatoCalculator;
 import com.uade.tpo.foodmarketplace.entity.dto.resena.ResenaResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.user.UserResponse;
 import com.uade.tpo.foodmarketplace.entity.user.User;
@@ -28,7 +29,7 @@ public final class ResponseMapper {
 
     public static PlatoResponse plato(Plato plato) {
         return new PlatoResponse(plato.getId(), plato.getNombre(), plato.getDescripcion(), plato.getImagenUrl(), plato.getPrecio(),
-                plato.getStockDisponible(), plato.getEstado(), plato.getChef().getId(),
+                plato.getDescuentoPorcentaje(), PrecioPlatoCalculator.precioEfectivo(plato), plato.getStockDisponible(), plato.getEstado(), plato.getChef().getId(),
                 plato.getCategorias().stream().map(Category::getDescription).toList(),
                 plato.getIngredientes().stream().map(i -> new IngredientePlatoResponse(i.getIngrediente().getId(),
                         i.getIngrediente().getNombre(), i.getCantidad(), i.getUnidadMedida())).toList());
