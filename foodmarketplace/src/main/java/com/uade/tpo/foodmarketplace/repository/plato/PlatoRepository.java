@@ -1,10 +1,13 @@
 package com.uade.tpo.foodmarketplace.repository.plato;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import jakarta.persistence.LockModeType;
 
 import com.uade.tpo.foodmarketplace.entity.plato.Plato;
@@ -16,14 +19,31 @@ public interface PlatoRepository extends JpaRepository<Plato, Long> {
 
     Optional<Plato> findByIdAndEstado(Long id, EstadoPlato estado);
 
+    @Query("""
+            select distinct p
+            from Plato p
+            left join p.categorias c
+            where p.estado = :estado
+              and (:nombre is null or lower(p.nombre) like lower(concat('%', :nombre, '%')))
+              and (:categoriaId is null or c.id = :categoriaId)
+              and (:precioMin is null or p.precio >= :precioMin)
+              and (:precioMax is null or p.precio <= :precioMax)
+            """)
+    List<Plato> buscarConFiltros(
+            @Param("estado") EstadoPlato estado,
+            @Param("nombre") String nombre,
+            @Param("categoriaId") Long categoriaId,
+            @Param("precioMin") BigDecimal precioMin,
+            @Param("precioMax") BigDecimal precioMax);
+
     /**
      * Indica si una categoría está asignada a al menos un plato.
      */
     boolean existsByCategoriasId(Long categoryId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @org.springframework.data.jpa.repository.Query("select p from Plato p where p.id = :id")
+    @Query("select p from Plato p where p.id = :id")
     java.util.Optional<Plato> findByIdForUpdate(
-            @org.springframework.data.repository.query.Param("id") Long id
+            @Param("id") Long id
     );
 }

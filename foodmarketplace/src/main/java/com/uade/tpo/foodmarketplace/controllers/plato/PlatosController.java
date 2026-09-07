@@ -1,5 +1,6 @@
 package com.uade.tpo.foodmarketplace.controllers.plato;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import jakarta.validation.Valid;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoRequest;
@@ -30,8 +32,13 @@ public class PlatosController {
     private PlatoService platoService;
 
     @GetMapping
-    public ResponseEntity<List<PlatoResponse>> getPlatos() {
-        return ResponseEntity.ok(platoService.getPlatos().stream().map(ResponseMapper::plato).toList());
+    public ResponseEntity<List<PlatoResponse>> getPlatos(
+            @RequestParam(name = "nombre", required = false) String nombre,
+            @RequestParam(name = "categoriaId", required = false) Long categoriaId,
+            @RequestParam(name = "precioMin", required = false) BigDecimal precioMin,
+            @RequestParam(name = "precioMax", required = false) BigDecimal precioMax) {
+        return ResponseEntity.ok(platoService.getPlatos(nombre, categoriaId, precioMin, precioMax).stream()
+                .map(ResponseMapper::plato).toList());
     }
 
     @GetMapping("/{platoId}")

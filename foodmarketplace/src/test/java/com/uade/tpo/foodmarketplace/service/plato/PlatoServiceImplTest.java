@@ -23,11 +23,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoIngredienteRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoRequest;
 import com.uade.tpo.foodmarketplace.entity.ingrediente.Ingrediente;
+import com.uade.tpo.foodmarketplace.entity.plato.EstadoPlato;
 import com.uade.tpo.foodmarketplace.entity.plato.Plato;
 import com.uade.tpo.foodmarketplace.entity.plato.PlatoIngrediente;
 import com.uade.tpo.foodmarketplace.entity.plato.UnidadMedida;
 import com.uade.tpo.foodmarketplace.entity.user.Role;
 import com.uade.tpo.foodmarketplace.entity.user.User;
+import com.uade.tpo.foodmarketplace.exceptions.category.CategoryNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.repository.category.CategoryRepository;
 import com.uade.tpo.foodmarketplace.repository.ingrediente.IngredienteRepository;
@@ -60,6 +62,65 @@ class PlatoServiceImplTest {
 
     @InjectMocks
     private PlatoServiceImpl platoService;
+
+    @Test
+    void getPlatos_sinFiltrosBuscaSoloPublicados() {
+        List<Plato> platos = List.of(new Plato());
+        when(platoRepository.buscarConFiltros(EstadoPlato.PUBLICADO, null, null, null, null))
+                .thenReturn(platos);
+
+        assertSame(platos, platoService.getPlatos(null, null, null, null));
+
+        verify(platoRepository).buscarConFiltros(EstadoPlato.PUBLICADO, null, null, null, null);
+    }
+
+    @Test
+    void getPlatos_combinaFiltrosYNormalizaElNombre() {
+        BigDecimal precioMin = new BigDecimal("5000");
+        BigDecimal precioMax = new BigDecimal("12000");
+        List<Plato> platos = List.of(new Plato());
+        when(categoryRepository.existsById(2L)).thenReturn(true);
+        when(platoRepository.buscarConFiltros(EstadoPlato.PUBLICADO, "pollo", 2L, precioMin, precioMax))
+                .thenReturn(platos);
+
+        assertSame(platos, platoService.getPlatos("  pollo  ", 2L, precioMin, precioMax));
+
+        verify(platoRepository).buscarConFiltros(EstadoPlato.PUBLICADO, "pollo", 2L, precioMin, precioMax);
+    }
+
+    @Test
+    void getPlatos_rechazaPrecioMinimoNegativo() {
+        assertThrows(BusinessRuleException.class,
+                () -> platoService.getPlatos(null, null, new BigDecimal("-1"), null));
+
+        verifyNoInteractions(platoRepository, categoryRepository);
+    }
+
+    @Test
+    void getPlatos_rechazaPrecioMaximoNegativo() {
+        assertThrows(BusinessRuleException.class,
+                () -> platoService.getPlatos(null, null, null, new BigDecimal("-1")));
+
+        verifyNoInteractions(platoRepository, categoryRepository);
+    }
+
+    @Test
+    void getPlatos_rechazaRangoInvertido() {
+        assertThrows(BusinessRuleException.class,
+                () -> platoService.getPlatos(null, null, new BigDecimal("12000"), new BigDecimal("5000")));
+
+        verifyNoInteractions(platoRepository, categoryRepository);
+    }
+
+    @Test
+    void getPlatos_rechazaCategoriaInexistente() {
+        when(categoryRepository.existsById(99L)).thenReturn(false);
+
+        assertThrows(CategoryNotFoundException.class,
+                () -> platoService.getPlatos(null, 99L, null, null));
+
+        verifyNoInteractions(platoRepository);
+    }
 
     @Test
     void updatePlato_actualizaRelacionesExistentesSinCrearDuplicados() {

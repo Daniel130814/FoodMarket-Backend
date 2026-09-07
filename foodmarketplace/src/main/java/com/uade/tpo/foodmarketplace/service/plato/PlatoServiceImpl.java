@@ -1,5 +1,6 @@
 package com.uade.tpo.foodmarketplace.service.plato;
 
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -53,8 +54,11 @@ public class PlatoServiceImpl implements PlatoService {
     private ResenaRepository resenaRepository;
 
     @Override
-    public List<Plato> getPlatos() {
-        return platoRepository.findByEstado(EstadoPlato.PUBLICADO);
+    public List<Plato> getPlatos(String nombre, Long categoriaId, BigDecimal precioMin, BigDecimal precioMax) {
+        validarFiltros(categoriaId, precioMin, precioMax);
+        String nombreNormalizado = nombre == null || nombre.isBlank() ? null : nombre.trim();
+        return platoRepository.buscarConFiltros(
+                EstadoPlato.PUBLICADO, nombreNormalizado, categoriaId, precioMin, precioMax);
     }
 
     @Override
@@ -239,6 +243,21 @@ public class PlatoServiceImpl implements PlatoService {
             if (!ingredientesRecibidos.add(item.getIngredienteId())) {
                 throw new BusinessRuleException("Un ingrediente no puede repetirse en el mismo plato");
             }
+        }
+    }
+
+    private void validarFiltros(Long categoriaId, BigDecimal precioMin, BigDecimal precioMax) {
+        if (precioMin != null && precioMin.signum() < 0) {
+            throw new BusinessRuleException("El precio minimo no puede ser negativo");
+        }
+        if (precioMax != null && precioMax.signum() < 0) {
+            throw new BusinessRuleException("El precio maximo no puede ser negativo");
+        }
+        if (precioMin != null && precioMax != null && precioMin.compareTo(precioMax) > 0) {
+            throw new BusinessRuleException("El precio minimo no puede ser mayor al precio maximo");
+        }
+        if (categoriaId != null && !categoryRepository.existsById(categoriaId)) {
+            throw new CategoryNotFoundException();
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.uade.tpo.foodmarketplace.service.plato;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -8,7 +9,7 @@ import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoRequest;
 
 public interface PlatoService {
 
-    List<Plato> getPlatos();
+    List<Plato> getPlatos(String nombre, Long categoriaId, BigDecimal precioMin, BigDecimal precioMax);
 
     Optional<Plato> getPlatoById(Long platoId);
 
