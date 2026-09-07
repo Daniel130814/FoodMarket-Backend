@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -14,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.persistence.ManyToMany;
@@ -43,8 +46,11 @@ public class Plato {
     @Column(nullable = false)
     private EstadoPlato estado;
 
-    @Column
-    private String imagenUrl;
+    @ElementCollection
+    @CollectionTable(name = "plato_imagenes", joinColumns = @JoinColumn(name = "plato_id"))
+    @Column(name = "imagen_url", nullable = false)
+    @OrderColumn(name = "orden")
+    private List<String> imagenesUrls = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "chef_id", nullable = false)

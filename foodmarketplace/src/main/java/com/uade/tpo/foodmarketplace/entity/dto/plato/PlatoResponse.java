@@ -8,7 +8,7 @@ public record PlatoResponse(
         Long id,
         String nombre,
         String descripcion,
-        String imagenUrl,
+        List<String> imagenesUrls,
         BigDecimal precio,
         BigDecimal descuentoPorcentaje,
         BigDecimal precioConDescuento,

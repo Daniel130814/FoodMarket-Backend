@@ -150,7 +150,10 @@ public class PlatoServiceImpl implements PlatoService {
 
         plato.setNombre(request.getNombre());
         plato.setDescripcion(request.getDescripcion());
-        plato.setImagenUrl(request.getImagenUrl());
+        plato.getImagenesUrls().clear();
+        if (request.getImagenesUrls() != null) {
+            plato.getImagenesUrls().addAll(request.getImagenesUrls());
+        }
         plato.setPrecio(request.getPrecio());
         plato.setStockDisponible(request.getStockDisponible());
 
@@ -175,6 +178,11 @@ public class PlatoServiceImpl implements PlatoService {
         } else if (plato.getEstado() == EstadoPlato.AGOTADO
                 && request.getStockDisponible() > 0) {
             plato.setEstado(EstadoPlato.PUBLICADO);
+        }
+
+        if ((plato.getEstado() == EstadoPlato.PUBLICADO || plato.getEstado() == EstadoPlato.AGOTADO)
+                && plato.getImagenesUrls().isEmpty()) {
+            throw new BusinessRuleException("Un plato publicado debe tener al menos una imagen");
         }
 
         // Se resuelve cada categoría solicitada para que un id inválido no se persista silenciosamente.

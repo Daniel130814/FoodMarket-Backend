@@ -28,7 +28,7 @@ public class PlatoRequest {
     private Integer stockDisponible;
 
     private EstadoPlato estado;
-    private String imagenUrl;
+    private List<@NotBlank String> imagenesUrls;
 
     private List<Long> categoriasIds;
 

@@ -1,38 +1,32 @@
-1) En `OrderServiceImpl`, método `cancelarOrder()`:
+1) Visibilidad de platos agotados
 
-Antes se podía cancelar un pedido aunque ya estuviera confirmado, en preparación o enviado, siempre que no estuviera totalmente entregado.
+Se corrigió la lógica del catálogo público para que los platos AGOTADO sigan siendo visibles.
 
-Ahora solo se puede cancelar si la orden y todos sus subpedidos siguen en `PENDIENTE`; si no, se rechaza. Si se cancela, se repone el stock y se marcan orden + subpedidos como `CANCELADO`.
+Cambios realizados:
 
-2) En `DomicilioServiceImpl`, método `updateDomicilio()`: 
+PlatoServiceImpl.java → métodos getPlatos() y getPlatoById(): se agregó ESTADOS_PUBLICOS, que contiene PUBLICADO y AGOTADO.
+PlatoRepository.java → buscarConFiltros(): la query pasó de filtrar por un solo estado con = a aceptar varios mediante IN.
+PlatoRepository.java → findByIdAndEstadoIn(): el detalle también permite consultar PUBLICADO y AGOTADO.
+PlatoServiceImplTest.java: se actualizaron los tests y se agregaron casos para verificar que AGOTADO sea visible y que BORRADOR/PAUSADO sigan ocultos.
 
-Antes se podía editar un domicilio aunque ya estuviera asociado a pedidos, haciendo que cambiara retroactivamente la dirección de pedidos viejos.
+Los filtros por nombre, categoría y precio siguen funcionando igual, pero ahora contemplan PUBLICADO + AGOTADO.
 
-Ahora, si el domicilio ya fue usado en un pedido, no se puede modificar y se debe crear uno nuevo.
+El carrito no se modificó: un plato AGOTADO sigue sin poder agregarse.
 
-3) En `PlatoServiceImpl` y `PlatoRepository`:
+2) Múltiples fotografías por plato
 
-Antes los GET públicos devolvían platos sin importar su estado, por lo que podían aparecer `BORRADOR`, `PAUSADO` o `AGOTADO`.
+Se reemplazó la imagen única de cada plato por una lista de imágenes y se agregó la regla de que los platos públicos tengan al menos una fotografía.
 
-El cambio se hizo en `PlatoServiceImpl`, específicamente en:
-`getPlatos()`
-`getPlatoById(Long platoId)`
+Cambios realizados:
 
-En vez de usar `findAll()` y `findById()`, ahora llaman a consultas que filtran por `EstadoPlato.PUBLICADO`.
+Plato.java → campo imagenesUrls: el antiguo String imagenUrl se reemplazó por List<String> usando @ElementCollection, persistida en la tabla plato_imagenes con plato_id, imagen_url y orden.
+PlatoRequest.java → imagenesUrls: ahora create/update reciben varias URLs y cada elemento debe ser no vacío.
+PlatoResponse.java y ResponseMapper.plato() → ahora devuelven la lista completa de imágenes manteniendo su orden.
+PlatoServiceImpl.actualizarDatosPlato() → reemplaza la colección de imágenes y valida el estado final:
+BORRADOR: puede no tener imágenes.
+PUBLICADO: mínimo 1.
+AGOTADO: mínimo 1.
+PAUSADO: puede no tener imágenes.
+PlatoServiceImplTest.java → se agregaron tests de múltiples imágenes, orden y validaciones según estado.
 
-Para eso, en `PlatoRepository` se agregaron:
-`findByEstado(EstadoPlato estado)`
-`findByIdAndEstado(Long id, EstadoPlato estado)`
-
-De esta forma, tanto el catálogo público como la búsqueda por ID devuelven únicamente platos publicados.
-
-
-4) En `OrderServiceImpl` y `PlatoServiceImpl` ajusté la lógica para que el estado del plato quede sincronizado con el stock.
-
-En `OrderServiceImpl`, metodo `createOrder()`, cuando una compra deja el stock en `0`, el plato pasa automáticamente de `PUBLICADO` a `AGOTADO`.
-
-En `OrderServiceImpl`, metodo `cancelarOrder()`, si se repone stock de un plato que estaba `AGOTADO`, vuelve automáticamente a `PUBLICADO`.
-
-En `PlatoServiceImpl`, metodo `actualizarDatosPlato()`, también se valida esa coherencia al crear o editar un plato, evitando combinaciones como `PUBLICADO` con stock `0` o `AGOTADO` con stock disponible.
-
-Los estados manuales `BORRADOR` y `PAUSADO` no se modifican automáticamente.  
+No se tocaron endpoints, carrito, stock, pedidos, descuentos, filtros ni autenticación.

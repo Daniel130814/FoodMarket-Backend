@@ -20,6 +20,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import jakarta.validation.Validation;
+import jakarta.validation.ValidatorFactory;
+
+import com.uade.tpo.foodmarketplace.entity.dto.common.ResponseMapper;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoIngredienteRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoRequest;
 import com.uade.tpo.foodmarketplace.entity.ingrediente.Ingrediente;
@@ -48,6 +52,8 @@ class PlatoServiceImplTest {
     private static final long POLLO_ID = 1L;
     private static final long ARROZ_ID = 2L;
     private static final long TOMATE_ID = 3L;
+    private static final String IMAGEN_1 = "https://ejemplo.com/plato-1.jpg";
+    private static final String IMAGEN_2 = "https://ejemplo.com/plato-2.jpg";
 
     @Mock
     private PlatoRepository platoRepository;
@@ -149,6 +155,105 @@ class PlatoServiceImplTest {
     }
 
     @Test
+    void createPlato_permiteBorradorSinImagenes() {
+        prepararCreacionExitosa();
+
+        Plato plato = platoService.createPlato(requestPara(EstadoPlato.BORRADOR, 1, null));
+
+        assertEquals(EstadoPlato.BORRADOR, plato.getEstado());
+        assertEquals(List.of(), plato.getImagenesUrls());
+    }
+
+    @Test
+    void createPlato_rechazaPublicadoSinImagenes() {
+        autenticarChef();
+
+        BusinessRuleException exception = assertThrows(BusinessRuleException.class,
+                () -> platoService.createPlato(requestPara(EstadoPlato.PUBLICADO, 1, List.of())));
+
+        assertEquals("Un plato publicado debe tener al menos una imagen", exception.getMessage());
+        verify(platoRepository, never()).save(any());
+    }
+
+    @Test
+    void createPlato_permitePublicadoConUnaImagen() {
+        prepararCreacionExitosa();
+
+        Plato plato = platoService.createPlato(requestPara(EstadoPlato.PUBLICADO, 1, List.of(IMAGEN_1)));
+
+        assertEquals(EstadoPlato.PUBLICADO, plato.getEstado());
+        assertEquals(List.of(IMAGEN_1), plato.getImagenesUrls());
+    }
+
+    @Test
+    void createPlato_permitePublicadoConVariasImagenesYConservaElOrden() {
+        prepararCreacionExitosa();
+        List<String> imagenes = List.of(IMAGEN_1, IMAGEN_2);
+
+        Plato plato = platoService.createPlato(requestPara(EstadoPlato.PUBLICADO, 1, imagenes));
+
+        assertEquals(imagenes, plato.getImagenesUrls());
+        assertEquals(imagenes, ResponseMapper.plato(plato).imagenesUrls());
+    }
+
+    @Test
+    void createPlato_rechazaAgotadoSinImagenes() {
+        autenticarChef();
+
+        assertThrows(BusinessRuleException.class,
+                () -> platoService.createPlato(requestPara(EstadoPlato.PUBLICADO, 0, List.of())));
+
+        verify(platoRepository, never()).save(any());
+    }
+
+    @Test
+    void createPlato_permiteAgotadoConImagenes() {
+        prepararCreacionExitosa();
+
+        Plato plato = platoService.createPlato(requestPara(EstadoPlato.PUBLICADO, 0, List.of(IMAGEN_1)));
+
+        assertEquals(EstadoPlato.AGOTADO, plato.getEstado());
+        assertEquals(List.of(IMAGEN_1), plato.getImagenesUrls());
+    }
+
+    @Test
+    void createPlato_permitePausadoSinImagenes() {
+        prepararCreacionExitosa();
+
+        Plato plato = platoService.createPlato(requestPara(EstadoPlato.PAUSADO, 1, List.of()));
+
+        assertEquals(EstadoPlato.PAUSADO, plato.getEstado());
+        assertEquals(List.of(), plato.getImagenesUrls());
+    }
+
+    @Test
+    void updatePlato_rechazaDejarSinImagenesUnPlatoPublicado() {
+        User chef = chef();
+        Plato plato = new Plato();
+        plato.setChef(chef);
+        plato.setEstado(EstadoPlato.PUBLICADO);
+        plato.setStockDisponible(1);
+        plato.getImagenesUrls().add(IMAGEN_1);
+        when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.of(plato));
+        when(authenticatedUserService.getCurrentUser()).thenReturn(chef);
+
+        assertThrows(BusinessRuleException.class,
+                () -> platoService.updatePlato(PLATO_ID,
+                        requestPara(EstadoPlato.PUBLICADO, 1, List.of())));
+
+        verify(platoRepository, never()).save(any());
+    }
+
+    @Test
+    void platoRequest_rechazaImagenEnBlanco() {
+        PlatoRequest request = requestPara(EstadoPlato.BORRADOR, 1, List.of("   "));
+
+        try (ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory()) {
+            assertEquals(1, validatorFactory.getValidator().validate(request).size());
+        }
+    }
+
+    @Test
     void updatePlato_actualizaRelacionesExistentesSinCrearDuplicados() {
         Plato plato = platoCon(ingrediente("Pollo", POLLO_ID), new BigDecimal("250"));
         PlatoIngrediente relacionExistente = plato.getIngredientes().getFirst();
@@ -203,6 +308,32 @@ class PlatoServiceImplTest {
         assertEquals(new BigDecimal("250"), relacionExistente.getCantidad());
         verify(platoRepository, never()).save(any());
         verifyNoInteractions(categoryRepository, ingredienteRepository);
+    }
+
+    private void prepararCreacionExitosa() {
+        autenticarChef();
+        when(platoRepository.save(any(Plato.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    private User autenticarChef() {
+        User chef = chef();
+        when(authenticatedUserService.getCurrentUser()).thenReturn(chef);
+        return chef;
+    }
+
+    private User chef() {
+        User chef = new User();
+        chef.setId(CHEF_ID);
+        chef.setRole(Role.CHEF);
+        return chef;
+    }
+
+    private PlatoRequest requestPara(EstadoPlato estado, int stock, List<String> imagenesUrls) {
+        PlatoRequest request = requestCon();
+        request.setEstado(estado);
+        request.setStockDisponible(stock);
+        request.setImagenesUrls(imagenesUrls);
+        return request;
     }
 
     private void prepararActualizacion(Plato plato) {

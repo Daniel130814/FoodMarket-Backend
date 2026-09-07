@@ -28,7 +28,8 @@ public final class ResponseMapper {
     }
 
     public static PlatoResponse plato(Plato plato) {
-        return new PlatoResponse(plato.getId(), plato.getNombre(), plato.getDescripcion(), plato.getImagenUrl(), plato.getPrecio(),
+        return new PlatoResponse(plato.getId(), plato.getNombre(), plato.getDescripcion(),
+                plato.getImagenesUrls().stream().toList(), plato.getPrecio(),
                 plato.getDescuentoPorcentaje(), PrecioPlatoCalculator.precioEfectivo(plato), plato.getStockDisponible(), plato.getEstado(), plato.getChef().getId(),
                 plato.getCategorias().stream().map(Category::getDescription).toList(),
                 plato.getIngredientes().stream().map(i -> new IngredientePlatoResponse(i.getIngrediente().getId(),
