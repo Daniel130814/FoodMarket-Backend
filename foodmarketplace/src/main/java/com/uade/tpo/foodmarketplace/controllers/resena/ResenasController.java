@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.uade.tpo.foodmarketplace.entity.dto.resena.ResenaRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.resena.ResenaResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.resena.ResenaUpdateRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ResponseMapper;
 import com.uade.tpo.foodmarketplace.service.resena.ResenaService;
 
@@ -29,8 +30,10 @@ public class ResenasController {
     private ResenaService resenaService;
 
     @GetMapping
-    public ResponseEntity<List<ResenaResponse>> getResenas() {
-        return ResponseEntity.ok(resenaService.getResenas().stream().map(ResponseMapper::resena).toList());
+    public ResponseEntity<ApiResponse<List<ResenaResponse>>> getResenas() {
+        List<ResenaResponse> resenas = resenaService.getResenas().stream().map(ResponseMapper::resena).toList();
+        String message = resenas.isEmpty() ? "No se encontraron reseñas" : "Reseñas obtenidas correctamente";
+        return ResponseEntity.ok(ApiResponse.ok(message, resenas));
     }
 
     @GetMapping("/{resenaId}")
@@ -40,8 +43,12 @@ public class ResenasController {
     }
 
     @GetMapping("/plato/{platoId}")
-    public ResponseEntity<List<ResenaResponse>> getResenasByPlatoId(@PathVariable("platoId") Long platoId) {
-        return ResponseEntity.ok(resenaService.getResenasByPlatoId(platoId).stream().map(ResponseMapper::resena).toList());
+    public ResponseEntity<ApiResponse<List<ResenaResponse>>> getResenasByPlatoId(@PathVariable("platoId") Long platoId) {
+        List<ResenaResponse> resenas = resenaService.getResenasByPlatoId(platoId).stream()
+                .map(ResponseMapper::resena).toList();
+        String message = resenas.isEmpty() ? "Todavía no hay reseñas para este plato"
+                : "Reseñas obtenidas correctamente";
+        return ResponseEntity.ok(ApiResponse.ok(message, resenas));
     }
 
     @PostMapping("createResena")

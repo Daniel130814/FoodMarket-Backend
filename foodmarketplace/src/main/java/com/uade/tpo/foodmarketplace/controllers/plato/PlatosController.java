@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.DescuentoPlatoRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ResponseMapper;
 import com.uade.tpo.foodmarketplace.service.plato.PlatoService;
 
@@ -32,13 +33,19 @@ public class PlatosController {
     private PlatoService platoService;
 
     @GetMapping
-    public ResponseEntity<List<PlatoResponse>> getPlatos(
+    public ResponseEntity<ApiResponse<List<PlatoResponse>>> getPlatos(
             @RequestParam(name = "nombre", required = false) String nombre,
             @RequestParam(name = "categoriaId", required = false) Long categoriaId,
             @RequestParam(name = "precioMin", required = false) BigDecimal precioMin,
             @RequestParam(name = "precioMax", required = false) BigDecimal precioMax) {
-        return ResponseEntity.ok(platoService.getPlatos(nombre, categoriaId, precioMin, precioMax).stream()
-                .map(ResponseMapper::plato).toList());
+        List<PlatoResponse> platos = platoService.getPlatos(nombre, categoriaId, precioMin, precioMax).stream()
+                .map(ResponseMapper::plato).toList();
+        boolean hayFiltros = (nombre != null && !nombre.isBlank()) || categoriaId != null || precioMin != null
+                || precioMax != null;
+        String message = platos.isEmpty()
+                ? (hayFiltros ? "No se encontraron platos con los filtros indicados" : "No se encontraron platos disponibles")
+                : "Platos obtenidos correctamente";
+        return ResponseEntity.ok(ApiResponse.ok(message, platos));
     }
 
     @GetMapping("/{platoId}")

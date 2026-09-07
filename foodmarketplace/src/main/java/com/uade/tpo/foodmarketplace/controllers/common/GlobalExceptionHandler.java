@@ -86,8 +86,8 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<ApiError> error(HttpStatus status, String message, WebRequest request) {
-        ApiError apiError = new ApiError(LocalDateTime.now(), status.value(), status.getReasonPhrase(), message,
-                request.getDescription(false).replace("uri=", ""));
+        ApiError apiError = new ApiError(false, LocalDateTime.now(), status.value(), status.getReasonPhrase(), message,
+                null, request.getDescription(false).replace("uri=", ""));
 
         return ResponseEntity.status(status).body(apiError);
     }

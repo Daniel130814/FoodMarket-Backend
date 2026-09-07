@@ -14,6 +14,7 @@ import com.uade.tpo.foodmarketplace.entity.dto.carrito.AddItemCarritoRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.carrito.CarritoResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.carrito.CheckoutCarritoRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.carrito.UpdateItemCarritoRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.order.OrderResponse;
 import com.uade.tpo.foodmarketplace.service.carrito.CarritoService;
 
@@ -32,8 +33,10 @@ public class CarritoController {
 
     /** Devuelve o crea de forma lazy el carrito del cliente autenticado. */
     @GetMapping
-    public ResponseEntity<CarritoResponse> getMiCarrito() {
-        return ResponseEntity.ok(carritoService.getMiCarrito());
+    public ResponseEntity<ApiResponse<CarritoResponse>> getMiCarrito() {
+        CarritoResponse carrito = carritoService.getMiCarrito();
+        String message = carrito.items().isEmpty() ? "El carrito está vacío" : "Carrito obtenido correctamente";
+        return ResponseEntity.ok(ApiResponse.ok(message, carrito));
     }
 
     /** Agrega un plato sin reservar stock. */

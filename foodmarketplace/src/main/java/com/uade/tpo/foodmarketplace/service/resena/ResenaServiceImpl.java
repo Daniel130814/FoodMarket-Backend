@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.uade.tpo.foodmarketplace.entity.resena.Resena;
@@ -68,6 +69,8 @@ public class ResenaServiceImpl implements ResenaService {
         Plato plato = platoRepository.findById(platoId)
                 .orElseThrow(PlatoNotFoundException::new);
 
+        // Esta consulta permite devolver un mensaje amigable antes de persistir.
+        // La constraint UNIQUE de la entidad protege el mismo caso ante requests concurrentes.
         if (resenaRepository.existsByClienteIdAndPlatoId(clienteId, platoId)) {
             throw new ResenaDuplicateException();
         }
@@ -83,7 +86,15 @@ public class ResenaServiceImpl implements ResenaService {
         resena.setCliente(cliente);
         resena.setPlato(plato);
 
-        return resenaRepository.save(resena);
+        try {
+            // El flush hace que una violación de la constraint se detecte en este punto.
+            return resenaRepository.saveAndFlush(resena);
+        } catch (DataIntegrityViolationException ex) {
+            if (esDuplicadoClientePlato(ex)) {
+                throw new ResenaDuplicateException(ex);
+            }
+            throw ex;
+        }
     }
 
     /**
@@ -113,5 +124,18 @@ public class ResenaServiceImpl implements ResenaService {
         authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(),
                 resena.getCliente().getId());
         resenaRepository.delete(resena);
+    }
+
+    private boolean esDuplicadoClientePlato(DataIntegrityViolationException exception) {
+        Throwable cause = exception;
+        while (cause != null) {
+            String message = cause.getMessage();
+            if (message != null && message.toLowerCase(java.util.Locale.ROOT)
+                    .contains("uk_resena_cliente_plato")) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 }
