@@ -11,6 +11,7 @@ import com.uade.tpo.foodmarketplace.entity.dto.auth.AuthenticationResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.auth.RegisterRequest;
 import com.uade.tpo.foodmarketplace.entity.user.Role;
 import com.uade.tpo.foodmarketplace.entity.user.User;
+import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
@@ -35,14 +36,22 @@ public class AuthenticationService {
 
     @Transactional
     public AuthenticationResponse register(RegisterRequest request) {
+        String username = normalizeUsername(request.username());
+        if (username.length() < 3 || username.length() > 50) {
+            throw new BusinessRuleException("El username debe tener entre 3 y 50 caracteres");
+        }
         String email = normalizeEmail(request.email());
         if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new UserDuplicateException();
+        }
+        if (userRepository.existsByUsernameIgnoreCase(username)) {
             throw new UserDuplicateException();
         }
 
         User user = new User();
         user.setNombre(request.nombre());
         user.setApellido(request.apellido());
+        user.setUsername(username);
         user.setEmail(email);
         // Nunca persistimos la contraseña recibida: BCrypt almacena un hash con salt.
         user.setPassword(passwordEncoder.encode(request.password()));
@@ -52,10 +61,10 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        String email = normalizeEmail(request.email());
+        String username = normalizeUsername(request.username());
         // AuthenticationManager usa el provider y BCrypt; no se comparan passwords manualmente.
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, request.password()));
-        User user = userRepository.findByEmailIgnoreCase(email).orElseThrow(UserNotFoundException::new);
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, request.password()));
+        User user = userRepository.findByUsernameIgnoreCase(username).orElseThrow(UserNotFoundException::new);
         return response(user);
     }
 
@@ -65,5 +74,9 @@ public class AuthenticationService {
 
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private String normalizeUsername(String username) {
+        return username.trim().toLowerCase(java.util.Locale.ROOT);
     }
 }

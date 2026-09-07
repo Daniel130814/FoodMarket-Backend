@@ -12,6 +12,7 @@ import com.uade.tpo.foodmarketplace.entity.user.Role;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ResponseMapper;
 import com.uade.tpo.foodmarketplace.entity.dto.user.UserResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.user.UserUpdateRequest;
+import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
@@ -50,18 +51,28 @@ public class UserServiceImpl implements UserService {
      * Crea un usuario y devuelve su DTO público en lugar de la entidad persistida.
      */
     @Override
-    public UserResponse createUser(String nombre, String apellido, String email, String password, Role role)
+    public UserResponse createUser(String username, String nombre, String apellido, String email, String password, Role role)
             throws UserDuplicateException {
 
+        String normalizedUsername = username.trim().toLowerCase(java.util.Locale.ROOT);
+        if (normalizedUsername.length() < 3 || normalizedUsername.length() > 50) {
+            throw new BusinessRuleException("El username debe tener entre 3 y 50 caracteres");
+        }
+        String normalizedEmail = email.trim().toLowerCase(java.util.Locale.ROOT);
+
         // Una consulta derivada evita cargar todos los usuarios solo para validar un email único.
-        if (userRepository.existsByEmailIgnoreCase(email)) {
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            throw new UserDuplicateException();
+        }
+        if (userRepository.existsByUsernameIgnoreCase(normalizedUsername)) {
             throw new UserDuplicateException();
         }
 
         User user = new User();
+        user.setUsername(normalizedUsername);
         user.setNombre(nombre);
         user.setApellido(apellido);
-        user.setEmail(email.trim().toLowerCase(java.util.Locale.ROOT));
+        user.setEmail(normalizedEmail);
         user.setPassword(passwordEncoder.encode(password));
         user.setRole(role);
 

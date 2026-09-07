@@ -25,7 +25,7 @@ public class AuthenticatedUserService {
                 || "anonymousUser".equals(authentication.getPrincipal())) {
             throw new AccessDeniedException("Se requiere autenticación");
         }
-        return userRepository.findByEmailIgnoreCase(authentication.getName())
+        return userRepository.findByUsernameIgnoreCase(authentication.getName())
                 .orElseThrow(() -> new AccessDeniedException("El usuario autenticado ya no existe"));
     }
 

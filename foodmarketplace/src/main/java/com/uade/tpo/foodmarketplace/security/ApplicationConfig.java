@@ -25,7 +25,7 @@ public class ApplicationConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return email -> userRepository.findByEmailIgnoreCase(email)
+        return username -> userRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
     }
 

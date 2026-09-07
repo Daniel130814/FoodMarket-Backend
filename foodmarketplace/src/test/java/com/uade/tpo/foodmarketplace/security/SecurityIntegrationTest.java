@@ -38,7 +38,7 @@ class SecurityIntegrationTest {
     @Test
     void registroAdminPublicoEsRechazado() throws Exception {
         String body = """
-                {"nombre":"Admin","apellido":"Local","email":"admin@mail.com",
+                {"username":"admin","nombre":"Admin","apellido":"Local","email":"admin@mail.com",
                  "password":"password1","tipoCuenta":"ADMIN"}
                 """;
         mockMvc.perform(post("/api/v1/auth/register")

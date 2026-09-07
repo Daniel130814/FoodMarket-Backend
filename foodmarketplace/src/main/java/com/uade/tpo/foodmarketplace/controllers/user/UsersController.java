@@ -57,6 +57,7 @@ public class UsersController {
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserRequest userRequest)
             throws UserDuplicateException {
         UserResponse result = userService.createUser(
+                userRequest.getUsername(),
                 userRequest.getNombre(),
                 userRequest.getApellido(),
                 userRequest.getEmail(),

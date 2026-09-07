@@ -70,6 +70,6 @@ public final class ResponseMapper {
      * Convierte una entidad User en una respuesta segura sin relaciones ni futuros datos sensibles.
      */
     public static UserResponse user(User user) {
-        return new UserResponse(user.getId(), user.getNombre(), user.getApellido(), user.getEmail(), user.getRole());
+        return new UserResponse(user.getId(), user.getUsername(), user.getNombre(), user.getApellido(), user.getEmail(), user.getRole());
     }
 }

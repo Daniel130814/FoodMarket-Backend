@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,6 +27,7 @@ import com.uade.tpo.foodmarketplace.entity.dto.auth.RegisterRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.auth.TipoRegistro;
 import com.uade.tpo.foodmarketplace.entity.user.Role;
 import com.uade.tpo.foodmarketplace.entity.user.User;
+import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserDuplicateException;
 import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
 import com.uade.tpo.foodmarketplace.security.JwtService;
@@ -44,8 +48,8 @@ class AuthenticationServiceTest {
     }
 
     @Test
-    void registraClienteConPasswordCodificada() {
-        RegisterRequest request = new RegisterRequest("Ana", "Perez", "ANA@MAIL.COM", "password1",
+    void registraClienteConUsernameNormalizadoYPasswordCodificada() {
+        RegisterRequest request = new RegisterRequest("  Ana.Perez  ", "Ana", "Perez", "ANA@MAIL.COM", "password1",
                 TipoRegistro.CLIENTE);
         when(passwordEncoder.encode("password1")).thenReturn("bcrypt");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
@@ -59,14 +63,16 @@ class AuthenticationServiceTest {
 
         assertEquals(Role.CLIENTE, response.role());
         assertEquals("jwt", response.accessToken());
-        verify(userRepository).save(org.mockito.ArgumentMatchers.argThat(user ->
-                user.getEmail().equals("ana@mail.com") && user.getPassword().equals("bcrypt")));
+        verify(userRepository).save(argThat(user ->
+                user.getUsername().equals("ana.perez")
+                        && user.getEmail().equals("ana@mail.com")
+                        && user.getPassword().equals("bcrypt")));
         assertNotEquals(request.password(), "bcrypt");
     }
 
     @Test
     void registraChef() {
-        RegisterRequest request = new RegisterRequest("Leo", "Chef", "chef@mail.com", "password1",
+        RegisterRequest request = new RegisterRequest("chefleo", "Leo", "Chef", "chef@mail.com", "password1",
                 TipoRegistro.CHEF);
         when(passwordEncoder.encode(any())).thenReturn("bcrypt");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -77,7 +83,7 @@ class AuthenticationServiceTest {
 
     @Test
     void rechazaEmailDuplicado() {
-        RegisterRequest request = new RegisterRequest("Ana", "Perez", "ana@mail.com", "password1",
+        RegisterRequest request = new RegisterRequest("ana", "Ana", "Perez", "ana@mail.com", "password1",
                 TipoRegistro.CLIENTE);
         when(userRepository.existsByEmailIgnoreCase("ana@mail.com")).thenReturn(true);
 
@@ -85,18 +91,43 @@ class AuthenticationServiceTest {
     }
 
     @Test
+    void rechazaUsernameDuplicadoIgnorandoMayusculasYEspacios() {
+        RegisterRequest request = new RegisterRequest("  ANA  ", "Ana", "Perez", "otra@mail.com", "password1",
+                TipoRegistro.CLIENTE);
+        when(userRepository.existsByUsernameIgnoreCase("ana")).thenReturn(true);
+
+        assertThrows(UserDuplicateException.class, () -> service.register(request));
+    }
+
+    @Test
+    void rechazaUsernameCortoDespuesDeNormalizar() {
+        RegisterRequest request = new RegisterRequest(" a ", "Ana", "Perez", "ana@mail.com", "password1",
+                TipoRegistro.CLIENTE);
+
+        BusinessRuleException exception = assertThrows(BusinessRuleException.class, () -> service.register(request));
+
+        assertEquals("El username debe tener entre 3 y 50 caracteres", exception.getMessage());
+    }
+
+    @Test
     void autenticaMedianteAuthenticationManager() {
         User user = new User();
         user.setId(3L);
-        user.setEmail("ana@mail.com");
+        user.setUsername("ana");
+        user.setEmail("otro@mail.com");
         user.setRole(Role.CLIENTE);
-        when(userRepository.findByEmailIgnoreCase("ana@mail.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsernameIgnoreCase("ana")).thenReturn(Optional.of(user));
         when(jwtService.generateToken(user)).thenReturn("jwt");
 
-        var response = service.authenticate(new AuthenticationRequest("ANA@MAIL.COM", "password1"));
+        var response = service.authenticate(new AuthenticationRequest("  ANA  ", "password1"));
 
         assertEquals("jwt", response.accessToken());
-        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        verify(authenticationManager).authenticate(argThat(authentication ->
+                authentication instanceof UsernamePasswordAuthenticationToken
+                        && authentication.getPrincipal().equals("ana")
+                        && authentication.getCredentials().equals("password1")));
+        verify(userRepository).findByUsernameIgnoreCase("ana");
+        verify(userRepository, never()).findByEmailIgnoreCase(anyString());
     }
 
     @Test
@@ -105,6 +136,6 @@ class AuthenticationServiceTest {
                 .thenThrow(new BadCredentialsException("Credenciales invalidas"));
 
         assertThrows(BadCredentialsException.class,
-                () -> service.authenticate(new AuthenticationRequest("ana@mail.com", "incorrecta")));
+                () -> service.authenticate(new AuthenticationRequest("ana", "incorrecta")));
     }
 }

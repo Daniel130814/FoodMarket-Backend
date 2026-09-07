@@ -9,6 +9,7 @@ import com.uade.tpo.foodmarketplace.entity.user.Role;
  */
 public record UserResponse(
         Long id,
+        String username,
         String nombre,
         String apellido,
         String email,

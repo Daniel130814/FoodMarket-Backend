@@ -8,7 +8,11 @@ import com.uade.tpo.foodmarketplace.entity.user.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
+    Optional<User> findByUsernameIgnoreCase(String username);
+
     Optional<User> findByEmailIgnoreCase(String email);
+
+    boolean existsByUsernameIgnoreCase(String username);
 
     /**
      * Comprueba si un email ya está registrado, sin distinguir mayúsculas.

@@ -41,6 +41,9 @@ public class User implements UserDetails {
     @Column
     private String apellido;
 
+    @Column(nullable = false, unique = true, length = 50, updatable = false)
+    private String username;
+
     @Column(nullable = false, unique = true)
     private String email;
 
@@ -72,10 +75,10 @@ public class User implements UserDetails {
         return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
-    /** El email identifica al usuario durante la autenticación. */
+    /** El username identifica al usuario durante la autenticación. */
     @Override
     public String getUsername() {
-        return email;
+        return username;
     }
 
     @Override
