@@ -35,6 +35,9 @@ import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 @Service
 public class PlatoServiceImpl implements PlatoService {
 
+    private static final List<EstadoPlato> ESTADOS_PUBLICOS =
+            List.of(EstadoPlato.PUBLICADO, EstadoPlato.AGOTADO);
+
     @Autowired
     private PlatoRepository platoRepository;
 
@@ -58,12 +61,12 @@ public class PlatoServiceImpl implements PlatoService {
         validarFiltros(categoriaId, precioMin, precioMax);
         String nombreNormalizado = nombre == null || nombre.isBlank() ? null : nombre.trim();
         return platoRepository.buscarConFiltros(
-                EstadoPlato.PUBLICADO, nombreNormalizado, categoriaId, precioMin, precioMax);
+                ESTADOS_PUBLICOS, nombreNormalizado, categoriaId, precioMin, precioMax);
     }
 
     @Override
     public Optional<Plato> getPlatoById(Long platoId) {
-        return platoRepository.findByIdAndEstado(platoId, EstadoPlato.PUBLICADO);
+        return platoRepository.findByIdAndEstadoIn(platoId, ESTADOS_PUBLICOS);
     }
 
     @Override

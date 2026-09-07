@@ -41,6 +41,8 @@ import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 @ExtendWith(MockitoExtension.class)
 class PlatoServiceImplTest {
 
+    private static final List<EstadoPlato> ESTADOS_PUBLICOS =
+            List.of(EstadoPlato.PUBLICADO, EstadoPlato.AGOTADO);
     private static final long PLATO_ID = 10L;
     private static final long CHEF_ID = 20L;
     private static final long POLLO_ID = 1L;
@@ -64,14 +66,18 @@ class PlatoServiceImplTest {
     private PlatoServiceImpl platoService;
 
     @Test
-    void getPlatos_sinFiltrosBuscaSoloPublicados() {
-        List<Plato> platos = List.of(new Plato());
-        when(platoRepository.buscarConFiltros(EstadoPlato.PUBLICADO, null, null, null, null))
+    void getPlatos_sinFiltrosIncluyePublicadosYAgotadosPeroNoEstadosPrivados() {
+        Plato publicado = new Plato();
+        publicado.setEstado(EstadoPlato.PUBLICADO);
+        Plato agotado = new Plato();
+        agotado.setEstado(EstadoPlato.AGOTADO);
+        List<Plato> platos = List.of(publicado, agotado);
+        when(platoRepository.buscarConFiltros(ESTADOS_PUBLICOS, null, null, null, null))
                 .thenReturn(platos);
 
         assertSame(platos, platoService.getPlatos(null, null, null, null));
 
-        verify(platoRepository).buscarConFiltros(EstadoPlato.PUBLICADO, null, null, null, null);
+        verify(platoRepository).buscarConFiltros(ESTADOS_PUBLICOS, null, null, null, null);
     }
 
     @Test
@@ -80,12 +86,32 @@ class PlatoServiceImplTest {
         BigDecimal precioMax = new BigDecimal("12000");
         List<Plato> platos = List.of(new Plato());
         when(categoryRepository.existsById(2L)).thenReturn(true);
-        when(platoRepository.buscarConFiltros(EstadoPlato.PUBLICADO, "pollo", 2L, precioMin, precioMax))
+        when(platoRepository.buscarConFiltros(ESTADOS_PUBLICOS, "pollo", 2L, precioMin, precioMax))
                 .thenReturn(platos);
 
         assertSame(platos, platoService.getPlatos("  pollo  ", 2L, precioMin, precioMax));
 
-        verify(platoRepository).buscarConFiltros(EstadoPlato.PUBLICADO, "pollo", 2L, precioMin, precioMax);
+        verify(platoRepository).buscarConFiltros(ESTADOS_PUBLICOS, "pollo", 2L, precioMin, precioMax);
+    }
+
+    @Test
+    void getPlatoById_permiteAgotado() {
+        Plato agotado = new Plato();
+        agotado.setEstado(EstadoPlato.AGOTADO);
+        when(platoRepository.findByIdAndEstadoIn(PLATO_ID, ESTADOS_PUBLICOS)).thenReturn(Optional.of(agotado));
+
+        assertSame(agotado, platoService.getPlatoById(PLATO_ID).orElseThrow());
+
+        verify(platoRepository).findByIdAndEstadoIn(PLATO_ID, ESTADOS_PUBLICOS);
+    }
+
+    @Test
+    void getPlatoById_excluyeBorradorYPausado() {
+        when(platoRepository.findByIdAndEstadoIn(PLATO_ID, ESTADOS_PUBLICOS)).thenReturn(Optional.empty());
+
+        assertFalse(platoService.getPlatoById(PLATO_ID).isPresent());
+
+        verify(platoRepository).findByIdAndEstadoIn(PLATO_ID, ESTADOS_PUBLICOS);
     }
 
     @Test

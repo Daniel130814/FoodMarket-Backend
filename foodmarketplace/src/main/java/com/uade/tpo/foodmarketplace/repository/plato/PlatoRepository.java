@@ -17,20 +17,20 @@ public interface PlatoRepository extends JpaRepository<Plato, Long> {
 
     List<Plato> findByEstado(EstadoPlato estado);
 
-    Optional<Plato> findByIdAndEstado(Long id, EstadoPlato estado);
+    Optional<Plato> findByIdAndEstadoIn(Long id, List<EstadoPlato> estados);
 
     @Query("""
             select distinct p
             from Plato p
             left join p.categorias c
-            where p.estado = :estado
+            where p.estado in :estados
               and (:nombre is null or lower(p.nombre) like lower(concat('%', :nombre, '%')))
               and (:categoriaId is null or c.id = :categoriaId)
               and (:precioMin is null or p.precio >= :precioMin)
               and (:precioMax is null or p.precio <= :precioMax)
             """)
     List<Plato> buscarConFiltros(
-            @Param("estado") EstadoPlato estado,
+            @Param("estados") List<EstadoPlato> estados,
             @Param("nombre") String nombre,
             @Param("categoriaId") Long categoriaId,
             @Param("precioMin") BigDecimal precioMin,
