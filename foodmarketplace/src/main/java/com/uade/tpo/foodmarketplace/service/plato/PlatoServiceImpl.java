@@ -26,6 +26,7 @@ import com.uade.tpo.foodmarketplace.exceptions.category.CategoryNotFoundExceptio
 import com.uade.tpo.foodmarketplace.exceptions.ingrediente.IngredienteNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.plato.PlatoNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.category.CategoryRepository;
+import com.uade.tpo.foodmarketplace.repository.carrito.ItemCarritoRepository;
 import com.uade.tpo.foodmarketplace.repository.ingrediente.IngredienteRepository;
 import com.uade.tpo.foodmarketplace.repository.order.DetallePedidoRepository;
 import com.uade.tpo.foodmarketplace.repository.plato.PlatoRepository;
@@ -35,8 +36,7 @@ import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 @Service
 public class PlatoServiceImpl implements PlatoService {
 
-    private static final List<EstadoPlato> ESTADOS_PUBLICOS =
-            List.of(EstadoPlato.PUBLICADO, EstadoPlato.AGOTADO);
+    private static final List<EstadoPlato> ESTADOS_PUBLICOS = List.of(EstadoPlato.PUBLICADO, EstadoPlato.AGOTADO);
 
     @Autowired
     private PlatoRepository platoRepository;
@@ -55,6 +55,9 @@ public class PlatoServiceImpl implements PlatoService {
 
     @Autowired
     private ResenaRepository resenaRepository;
+
+    @Autowired
+    private ItemCarritoRepository itemCarritoRepository;
 
     @Override
     public List<Plato> getPlatos(String nombre, Long categoriaId, BigDecimal precioMin, BigDecimal precioMax) {
@@ -83,12 +86,14 @@ public class PlatoServiceImpl implements PlatoService {
     }
 
     /**
-     * Actualiza un plato y reemplaza atómicamente sus asociaciones de categorías e ingredientes.
+     * Actualiza un plato y reemplaza atómicamente sus asociaciones de categorías e
+     * ingredientes.
      */
     @Override
     @Transactional
     public Plato updatePlato(Long platoId, PlatoRequest request) {
-        // La entidad actual se carga antes de cambiar colecciones para que orphanRemoval funcione correctamente.
+        // La entidad actual se carga antes de cambiar colecciones para que
+        // orphanRemoval funcione correctamente.
         Plato plato = platoRepository.findById(platoId).orElseThrow(PlatoNotFoundException::new);
         User currentUser = authenticatedUserService.getCurrentUser();
         authenticatedUserService.requireOwnerOrAdmin(currentUser, plato.getChef().getId());
@@ -97,7 +102,8 @@ public class PlatoServiceImpl implements PlatoService {
     }
 
     /**
-     * Elimina un plato sin uso o lo pausa para conservar el historial de órdenes y reseñas.
+     * Elimina un plato sin uso o lo pausa para conservar el historial de órdenes y
+     * reseñas.
      */
     @Override
     @Transactional
@@ -107,8 +113,10 @@ public class PlatoServiceImpl implements PlatoService {
         authenticatedUserService.requireOwnerOrAdmin(currentUser, plato.getChef().getId());
         boolean tieneHistorial = detallePedidoRepository.existsByPlatoId(platoId)
                 || resenaRepository.existsByPlatoId(platoId);
-        if (tieneHistorial) {
-            // El borrado lógico conserva las referencias de claves foráneas usadas por órdenes y reseñas completadas.
+        boolean estaEnCarrito = itemCarritoRepository.existsByPlatoId(platoId);
+        if (tieneHistorial || estaEnCarrito) {
+            // El borrado lógico conserva historial y carritos ajenos sin eliminar sus items
+            // silenciosamente.
             plato.setEstado(EstadoPlato.PAUSADO);
             platoRepository.save(plato);
             return;
@@ -118,7 +126,8 @@ public class PlatoServiceImpl implements PlatoService {
     }
 
     /**
-     * Actualiza el porcentaje de descuento del plato sin alterar el precio base histórico.
+     * Actualiza el porcentaje de descuento del plato sin alterar el precio base
+     * histórico.
      */
     @Override
     @Transactional
@@ -128,7 +137,8 @@ public class PlatoServiceImpl implements PlatoService {
             throw new BusinessRuleException("El descuento debe ser mayor o igual a 0 y menor a 100");
         }
         Plato plato = platoRepository.findById(platoId).orElseThrow(PlatoNotFoundException::new);
-        authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(), plato.getChef().getId());
+        authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(),
+                plato.getChef().getId());
         plato.setDescuentoPorcentaje(porcentaje);
         return platoRepository.save(plato);
     }
@@ -143,7 +153,8 @@ public class PlatoServiceImpl implements PlatoService {
     }
 
     /**
-     * Copia los datos de la solicitud en un plato y sincroniza las asociaciones que le pertenecen.
+     * Copia los datos de la solicitud en un plato y sincroniza las asociaciones que
+     * le pertenecen.
      */
     private void actualizarDatosPlato(Plato plato, PlatoRequest request, boolean esNuevo) {
         validarIngredientesSinDuplicados(request);
@@ -164,8 +175,7 @@ public class PlatoServiceImpl implements PlatoService {
                 plato.setEstado(
                         request.getStockDisponible() == 0
                                 ? EstadoPlato.AGOTADO
-                                : EstadoPlato.PUBLICADO
-                );
+                                : EstadoPlato.PUBLICADO);
 
             } else {
                 plato.setEstado(request.getEstado());
@@ -185,7 +195,8 @@ public class PlatoServiceImpl implements PlatoService {
             throw new BusinessRuleException("Un plato publicado debe tener al menos una imagen");
         }
 
-        // Se resuelve cada categoría solicitada para que un id inválido no se persista silenciosamente.
+        // Se resuelve cada categoría solicitada para que un id inválido no se persista
+        // silenciosamente.
         List<Category> categorias = obtenerCategorias(request.getCategoriasIds());
         plato.getCategorias().clear();
         plato.getCategorias().addAll(categorias);
@@ -194,7 +205,8 @@ public class PlatoServiceImpl implements PlatoService {
     }
 
     /**
-     * Resuelve los identificadores de categorías solicitados en entidades de categoría gestionadas.
+     * Resuelve los identificadores de categorías solicitados en entidades de
+     * categoría gestionadas.
      */
     private List<Category> obtenerCategorias(List<Long> categoriasIds) {
         if (categoriasIds == null) {
@@ -208,7 +220,8 @@ public class PlatoServiceImpl implements PlatoService {
 
     private void actualizarIngredientes(Plato plato, PlatoRequest request) {
         if (request.getIngredientes() == null) {
-            // Una lista ausente conserva el comportamiento previo: elimina toda la receta mediante orphanRemoval.
+            // Una lista ausente conserva el comportamiento previo: elimina toda la receta
+            // mediante orphanRemoval.
             plato.getIngredientes().clear();
             return;
         }
@@ -221,13 +234,16 @@ public class PlatoServiceImpl implements PlatoService {
 
         request.getIngredientes().forEach(item -> ingredientesRecibidos.add(item.getIngredienteId()));
 
-        // No borramos toda la colección: las relaciones que ya no llegan se eliminan una a una por orphanRemoval.
-        plato.getIngredientes().removeIf(relacion -> !ingredientesRecibidos.contains(relacion.getIngrediente().getId()));
+        // No borramos toda la colección: las relaciones que ya no llegan se eliminan
+        // una a una por orphanRemoval.
+        plato.getIngredientes()
+                .removeIf(relacion -> !ingredientesRecibidos.contains(relacion.getIngrediente().getId()));
 
         request.getIngredientes().forEach(item -> {
             PlatoIngrediente relacionExistente = relacionesExistentes.get(item.getIngredienteId());
             if (relacionExistente != null) {
-                // Si la relación ya existe, reutilizamos la misma Entity y evitamos un INSERT duplicado.
+                // Si la relación ya existe, reutilizamos la misma Entity y evitamos un INSERT
+                // duplicado.
                 relacionExistente.setCantidad(item.getCantidad());
                 relacionExistente.setUnidadMedida(item.getUnidadMedida());
                 return;

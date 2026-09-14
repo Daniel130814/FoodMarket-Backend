@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import com.uade.tpo.foodmarketplace.entity.plato.Plato;
 import com.uade.tpo.foodmarketplace.entity.user.Role;
 import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.exceptions.carrito.CarritoVacioException;
+import com.uade.tpo.foodmarketplace.exceptions.carrito.CarritoIntegrityConflictException;
 import com.uade.tpo.foodmarketplace.exceptions.carrito.ItemCarritoNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.exceptions.plato.PlatoNotFoundException;
@@ -42,14 +44,17 @@ public class CarritoServiceImpl implements CarritoService {
     private final PlatoRepository platoRepository;
     private final OrderService orderService;
     private final AuthenticatedUserService authenticatedUserService;
+    private final CarritoCreationService carritoCreationService;
 
     public CarritoServiceImpl(CarritoRepository carritoRepository, ItemCarritoRepository itemCarritoRepository,
-            PlatoRepository platoRepository, OrderService orderService, AuthenticatedUserService authenticatedUserService) {
+            PlatoRepository platoRepository, OrderService orderService, AuthenticatedUserService authenticatedUserService,
+            CarritoCreationService carritoCreationService) {
         this.carritoRepository = carritoRepository;
         this.itemCarritoRepository = itemCarritoRepository;
         this.platoRepository = platoRepository;
         this.orderService = orderService;
         this.authenticatedUserService = authenticatedUserService;
+        this.carritoCreationService = carritoCreationService;
     }
 
     /** Obtiene el carrito del JWT o crea uno vacío de forma lazy para el cliente. */
@@ -134,11 +139,25 @@ public class CarritoServiceImpl implements CarritoService {
 
     private Carrito obtenerOCrearCarrito() {
         User cliente = obtenerClienteActual();
-        return carritoRepository.findByClienteId(cliente.getId()).orElseGet(() -> {
-            Carrito carrito = new Carrito();
-            carrito.setCliente(cliente);
-            return carritoRepository.save(carrito);
-        });
+        return carritoRepository.findByClienteIdForUpdate(cliente.getId())
+                .orElseGet(() -> crearYBloquearCarrito(cliente.getId()));
+    }
+
+    private Carrito crearYBloquearCarrito(Long clienteId) {
+        try {
+            carritoCreationService.crearCarrito(clienteId);
+        } catch (DataIntegrityViolationException exception) {
+            if (!CarritoConstraintClassifier.esClienteUnico(exception)) {
+                throw exception;
+            }
+            if (carritoCreationService.buscarCarritoCreado(clienteId).isEmpty()) {
+                throw new CarritoIntegrityConflictException(
+                        "No se pudo recuperar el carrito creado concurrentemente");
+            }
+        }
+
+        return carritoRepository.findByClienteIdForUpdate(clienteId)
+                .orElseThrow(() -> new CarritoIntegrityConflictException("No se pudo crear el carrito del cliente"));
     }
 
     private User obtenerClienteActual() {

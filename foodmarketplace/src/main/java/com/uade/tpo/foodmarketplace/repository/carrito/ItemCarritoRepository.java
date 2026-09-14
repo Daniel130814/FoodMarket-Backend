@@ -9,4 +9,7 @@ import com.uade.tpo.foodmarketplace.entity.carrito.ItemCarrito;
 public interface ItemCarritoRepository extends JpaRepository<ItemCarrito, Long> {
 
     Optional<ItemCarrito> findByCarritoIdAndPlatoId(Long carritoId, Long platoId);
+
+    /** Indica si un plato continúa referenciado por algún carrito activo. */
+    boolean existsByPlatoId(Long platoId);
 }

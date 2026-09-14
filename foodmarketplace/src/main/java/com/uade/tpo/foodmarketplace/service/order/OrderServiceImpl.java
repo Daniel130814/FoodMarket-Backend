@@ -30,6 +30,7 @@ import com.uade.tpo.foodmarketplace.exceptions.domicilio.DomicilioNotFoundExcept
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.domicilio.DomicilioRepository;
 import com.uade.tpo.foodmarketplace.repository.order.OrderRepository;
+import com.uade.tpo.foodmarketplace.repository.order.SubPedidoChefRepository;
 import com.uade.tpo.foodmarketplace.repository.plato.PlatoRepository;
 import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 import com.uade.tpo.foodmarketplace.service.plato.PrecioPlatoCalculator;
@@ -48,6 +49,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private PlatoRepository platoRepository;
+
+    @Autowired
+    private SubPedidoChefRepository subPedidoChefRepository;
 
     @Override
     public List<Order> getOrders() {
@@ -132,7 +136,8 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public Order cancelarOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
+        // El lock de Order es el primer lock del comando; los locks de Plato se toman después.
+        Order order = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(PedidoNotFoundException::new);
 
         authenticatedUserService.requireOwnerOrAdmin(
@@ -141,7 +146,7 @@ public class OrderServiceImpl implements OrderService {
         );
 
         if (order.getEstado() == EstadoPedido.CANCELADO) {
-            return order;
+            throw new InvalidOrderStateException("La orden ya fue cancelada");
         }
 
         if (order.getEstado() != EstadoPedido.PENDIENTE) {
@@ -192,19 +197,22 @@ public class OrderServiceImpl implements OrderService {
         if (order.getEstado() == EstadoPedido.CANCELADO) {
             return order;
         }
-        if (order.getSubPedidos().isEmpty()) {
+        // La consulta ocurre luego de obtener el lock de Order en los comandos que actualizan subpedidos.
+        // Así se calcula con los estados confirmados más recientes y no con una colección previa al lock.
+        List<SubPedidoChef> subPedidosActuales = subPedidoChefRepository.findByPedidoId(order.getId());
+        if (subPedidosActuales.isEmpty()) {
             order.setEstado(EstadoPedido.PENDIENTE);
             return orderRepository.save(order);
         }
-        if (order.getSubPedidos().stream().allMatch(sub -> sub.getEstado() == EstadoPedido.ENTREGADO)) {
+        if (subPedidosActuales.stream().allMatch(sub -> sub.getEstado() == EstadoPedido.ENTREGADO)) {
             order.setEstado(EstadoPedido.ENTREGADO);
-        } else if (order.getSubPedidos().stream().anyMatch(sub -> sub.getEstado() == EstadoPedido.ENVIADO
+        } else if (subPedidosActuales.stream().anyMatch(sub -> sub.getEstado() == EstadoPedido.ENVIADO
                 || sub.getEstado() == EstadoPedido.ENTREGADO)) {
             // No existe un estado mixto en el enum, por lo que una entrega parcial se representa como ENVIADO.
             order.setEstado(EstadoPedido.ENVIADO);
-        } else if (order.getSubPedidos().stream().anyMatch(sub -> sub.getEstado() == EstadoPedido.EN_PREPARACION)) {
+        } else if (subPedidosActuales.stream().anyMatch(sub -> sub.getEstado() == EstadoPedido.EN_PREPARACION)) {
             order.setEstado(EstadoPedido.EN_PREPARACION);
-        } else if (order.getSubPedidos().stream().anyMatch(sub -> sub.getEstado() == EstadoPedido.CONFIRMADO)) {
+        } else if (subPedidosActuales.stream().anyMatch(sub -> sub.getEstado() == EstadoPedido.CONFIRMADO)) {
             order.setEstado(EstadoPedido.CONFIRMADO);
         } else {
             order.setEstado(EstadoPedido.PENDIENTE);

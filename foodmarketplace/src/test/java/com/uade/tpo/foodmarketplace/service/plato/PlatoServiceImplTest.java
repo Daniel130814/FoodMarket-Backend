@@ -36,6 +36,7 @@ import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.exceptions.category.CategoryNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.repository.category.CategoryRepository;
+import com.uade.tpo.foodmarketplace.repository.carrito.ItemCarritoRepository;
 import com.uade.tpo.foodmarketplace.repository.ingrediente.IngredienteRepository;
 import com.uade.tpo.foodmarketplace.repository.order.DetallePedidoRepository;
 import com.uade.tpo.foodmarketplace.repository.plato.PlatoRepository;
@@ -67,6 +68,8 @@ class PlatoServiceImplTest {
     private DetallePedidoRepository detallePedidoRepository;
     @Mock
     private ResenaRepository resenaRepository;
+    @Mock
+    private ItemCarritoRepository itemCarritoRepository;
 
     @InjectMocks
     private PlatoServiceImpl platoService;
@@ -308,6 +311,54 @@ class PlatoServiceImplTest {
         assertEquals(new BigDecimal("250"), relacionExistente.getCantidad());
         verify(platoRepository, never()).save(any());
         verifyNoInteractions(categoryRepository, ingredienteRepository);
+    }
+
+    @Test
+    void deletePlato_sinReferenciasLoEliminaFisicamente() {
+        Plato plato = platoCon(ingrediente("Pollo", POLLO_ID), BigDecimal.TEN);
+        when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.of(plato));
+        when(authenticatedUserService.getCurrentUser()).thenReturn(chef());
+        when(detallePedidoRepository.existsByPlatoId(PLATO_ID)).thenReturn(false);
+        when(resenaRepository.existsByPlatoId(PLATO_ID)).thenReturn(false);
+        when(itemCarritoRepository.existsByPlatoId(PLATO_ID)).thenReturn(false);
+
+        platoService.deletePlato(PLATO_ID);
+
+        verify(platoRepository).delete(plato);
+    }
+
+    @Test
+    void deletePlato_enCarritoLoPausaSinEliminarItems() {
+        Plato plato = platoCon(ingrediente("Pollo", POLLO_ID), BigDecimal.TEN);
+        plato.setEstado(EstadoPlato.PUBLICADO);
+        when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.of(plato));
+        when(authenticatedUserService.getCurrentUser()).thenReturn(chef());
+        when(detallePedidoRepository.existsByPlatoId(PLATO_ID)).thenReturn(false);
+        when(resenaRepository.existsByPlatoId(PLATO_ID)).thenReturn(false);
+        when(itemCarritoRepository.existsByPlatoId(PLATO_ID)).thenReturn(true);
+        when(platoRepository.save(plato)).thenReturn(plato);
+
+        platoService.deletePlato(PLATO_ID);
+
+        assertEquals(EstadoPlato.PAUSADO, plato.getEstado());
+        verify(platoRepository, never()).delete(plato);
+        verify(itemCarritoRepository).existsByPlatoId(PLATO_ID);
+    }
+
+    @Test
+    void deletePlato_conHistorialMantieneLaPoliticaDePausado() {
+        Plato plato = platoCon(ingrediente("Pollo", POLLO_ID), BigDecimal.TEN);
+        plato.setEstado(EstadoPlato.PUBLICADO);
+        when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.of(plato));
+        when(authenticatedUserService.getCurrentUser()).thenReturn(chef());
+        when(detallePedidoRepository.existsByPlatoId(PLATO_ID)).thenReturn(true);
+        when(itemCarritoRepository.existsByPlatoId(PLATO_ID)).thenReturn(false);
+        when(platoRepository.save(plato)).thenReturn(plato);
+
+        platoService.deletePlato(PLATO_ID);
+
+        assertEquals(EstadoPlato.PAUSADO, plato.getEstado());
+        verify(platoRepository, never()).delete(plato);
     }
 
     private void prepararCreacionExitosa() {

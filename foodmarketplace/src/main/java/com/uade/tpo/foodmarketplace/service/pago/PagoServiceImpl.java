@@ -63,7 +63,8 @@ public class PagoServiceImpl implements PagoService {
     @Override
     @Transactional
     public Pago createPago(MedioPago medioPago, Long pedidoId) {
-        Order pedido = orderRepository.findById(pedidoId)
+        // Order es el punto de serialización de pagos, rechazos y su bloqueo.
+        Order pedido = orderRepository.findByIdForUpdate(pedidoId)
                 .orElseThrow(PedidoNotFoundException::new);
         authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(),
                 pedido.getUser().getId());
@@ -96,11 +97,15 @@ public class PagoServiceImpl implements PagoService {
     @Override
     @Transactional
     public Pago actualizarEstadoPago(Long pagoId, EstadoPago estado) {
-        Pago pago = pagoRepository.findById(pagoId)
+        // Primero se obtiene el id escalar; la entidad Pago se carga recién después del lock de Order.
+        Long pedidoId = pagoRepository.findPedidoIdById(pagoId)
                 .orElseThrow(PagoNotFoundException::new);
-        Order pedido = pago.getPedido();
+        Order pedido = orderRepository.findByIdForUpdate(pedidoId)
+                .orElseThrow(PedidoNotFoundException::new);
+        Pago pago = pagoRepository.findByIdForUpdate(pagoId)
+                .orElseThrow(PagoNotFoundException::new);
 
-        // Se valida antes de cambiar datos para que un intento rechazado o reembolsado nunca se reabra.
+        // Todas las verificaciones dependen del estado leído bajo el lock de la misma Order.
         validarTransicion(pago.getEstado(), estado);
         if (estado == EstadoPago.APROBADO && pedido.getEstado() == EstadoPedido.CANCELADO) {
             throw new OrderCancelledException();

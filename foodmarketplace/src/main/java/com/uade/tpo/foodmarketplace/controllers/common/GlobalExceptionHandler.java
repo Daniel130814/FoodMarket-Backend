@@ -37,6 +37,7 @@ import com.uade.tpo.foodmarketplace.exceptions.user.UserDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.carrito.CarritoVacioException;
 import com.uade.tpo.foodmarketplace.exceptions.carrito.ItemCarritoNotFoundException;
+import com.uade.tpo.foodmarketplace.exceptions.carrito.CarritoIntegrityConflictException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -49,7 +50,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({ ResenaDuplicateException.class, ResourceInUseException.class, InvalidOrderStateException.class,
-            InvalidSubPedidoStateException.class, InvalidPagoStateException.class, OrderCancelledException.class })
+            InvalidSubPedidoStateException.class, InvalidPagoStateException.class, OrderCancelledException.class,
+            CarritoIntegrityConflictException.class })
     ResponseEntity<ApiError> conflict(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.CONFLICT, ex.getMessage(), request);
     }

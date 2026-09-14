@@ -86,11 +86,16 @@ public class SubPedidoChefServiceImpl implements SubPedidoChefService {
     @Override
     @Transactional
     public SubPedidoChef actualizarEstado(Long subPedidoId, EstadoPedido nuevoEstado) {
-        SubPedidoChef subPedido = subPedidoChefRepository.findById(subPedidoId)
+        // El id escalar no toma una decisión; permite bloquear primero el agregado Order.
+        Long orderId = subPedidoChefRepository.findPedidoIdById(subPedidoId)
+                .orElseThrow(SubPedidoNotFoundException::new);
+        Order order = orderRepository.findByIdForUpdate(orderId)
+                .orElseThrow(PedidoNotFoundException::new);
+        // Se conserva el orden de locks: Order y luego SubPedidoChef.
+        SubPedidoChef subPedido = subPedidoChefRepository.findByIdForUpdate(subPedidoId)
                 .orElseThrow(SubPedidoNotFoundException::new);
         authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(),
                 subPedido.getChef().getId());
-        Order order = subPedido.getPedido();
 
         // Una compra pendiente no puede entrar en preparación antes de que un pago la confirme.
         validarOrdenHabilitada(order);
@@ -99,8 +104,10 @@ public class SubPedidoChefServiceImpl implements SubPedidoChefService {
         subPedido.setEstado(nuevoEstado);
 
         // Tras modificar el subpedido independiente, se deriva nuevamente el estado general de la orden.
+        // saveAndFlush hace visible este estado para la consulta fresca de recalcularEstadoDesdeSubPedidos.
+        subPedidoChefRepository.saveAndFlush(subPedido);
         orderService.recalcularEstadoDesdeSubPedidos(order);
-        return subPedidoChefRepository.save(subPedido);
+        return subPedido;
     }
 
     /**
