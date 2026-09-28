@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.uade.tpo.foodmarketplace.entity.dto.order.OrderRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.order.OrderResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ResponseMapper;
+import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
+import com.uade.tpo.foodmarketplace.exceptions.order.PedidoNotFoundException;
 import com.uade.tpo.foodmarketplace.service.order.OrderService;
 
 @RestController
@@ -27,27 +29,27 @@ public class OrdersController {
     private OrderService orderService;
 
     @GetMapping
-    public ResponseEntity<List<OrderResponse>> getOrders() {
-        return ResponseEntity.ok(orderService.getOrders().stream().map(ResponseMapper::order).toList());
+    public ResponseEntity<ApiResponse<List<OrderResponse>>> getOrders() {
+        List<OrderResponse> data = orderService.getOrders().stream().map(ResponseMapper::order).toList();
+        return ResponseEntity.ok(ApiResponse.ok(data.isEmpty() ? "No hay pedidos registrados para mostrar." : "Pedidos obtenidos correctamente", data.isEmpty() ? null : data));
     }
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<OrderResponse> getOrderById(@PathVariable("orderId") Long orderId) {
-        return orderService.getOrderById(orderId).map(ResponseMapper::order).map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<ApiResponse<OrderResponse>> getOrderById(@PathVariable("orderId") Long orderId) {
+        return ResponseEntity.ok(ApiResponse.ok("Pedido obtenido correctamente", orderService.getOrderById(orderId).map(ResponseMapper::order).orElseThrow(PedidoNotFoundException::new)));
     }
 
     @PostMapping("createOrder")
-    public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody OrderRequest orderRequest) {
+    public ResponseEntity<ApiResponse<OrderResponse>> createOrder(@Valid @RequestBody OrderRequest orderRequest) {
         var result = orderService.createOrder(orderRequest);
 
         return ResponseEntity
                 .created(URI.create("/orders/" + result.getId()))
-                .body(ResponseMapper.order(result));
+                .body(ApiResponse.ok("Pedido creado correctamente", ResponseMapper.order(result)));
     }
 
     @PatchMapping("/{orderId}/cancelar")
-    public ResponseEntity<OrderResponse> cancelarOrder(@PathVariable Long orderId) {
-        return ResponseEntity.ok(ResponseMapper.order(orderService.cancelarOrder(orderId)));
+    public ResponseEntity<ApiResponse<OrderResponse>> cancelarOrder(@PathVariable Long orderId) {
+        return ResponseEntity.ok(ApiResponse.ok("Pedido cancelado correctamente", ResponseMapper.order(orderService.cancelarOrder(orderId))));
     }
 }

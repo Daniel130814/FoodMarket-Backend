@@ -24,6 +24,7 @@ import com.uade.tpo.foodmarketplace.entity.dto.plato.DescuentoPlatoRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ResponseMapper;
 import com.uade.tpo.foodmarketplace.service.plato.PlatoService;
+import com.uade.tpo.foodmarketplace.exceptions.plato.PlatoNotFoundException;
 
 @RestController
 @RequestMapping("platos")
@@ -45,13 +46,12 @@ public class PlatosController {
         String message = platos.isEmpty()
                 ? (hayFiltros ? "No se encontraron platos con los filtros indicados" : "No se encontraron platos disponibles")
                 : "Platos obtenidos correctamente";
-        return ResponseEntity.ok(ApiResponse.ok(message, platos));
+        return ResponseEntity.ok(ApiResponse.ok(message, platos.isEmpty() ? null : platos));
     }
 
     @GetMapping("/{platoId}")
-    public ResponseEntity<PlatoResponse> getPlatoById(@PathVariable("platoId") Long platoId) {
-        return platoService.getPlatoById(platoId).map(ResponseMapper::plato).map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<ApiResponse<PlatoResponse>> getPlatoById(@PathVariable("platoId") Long platoId) {
+        return ResponseEntity.ok(ApiResponse.ok("Plato obtenido correctamente",platoService.getPlatoById(platoId).map(ResponseMapper::plato).orElseThrow(PlatoNotFoundException::new)));
     }
 
     @PostMapping("createPlato")

@@ -16,7 +16,8 @@ import lombok.Data;
 /** Representa una cantidad solicitada; sus precios se calculan desde el plato al responder o comprar. */
 @Entity
 @Data
-@Table(name = "items_carrito", uniqueConstraints = @UniqueConstraint(columnNames = { "carrito_id", "plato_id" }))
+@Table(name = "items_carrito", uniqueConstraints = @UniqueConstraint(name = "uk_item_carrito_plato", columnNames = {
+        "carrito_id", "plato_id" }))
 public class ItemCarrito {
 
     @Id

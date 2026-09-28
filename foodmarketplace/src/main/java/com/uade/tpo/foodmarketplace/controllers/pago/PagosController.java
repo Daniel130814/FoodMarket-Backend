@@ -18,6 +18,8 @@ import com.uade.tpo.foodmarketplace.entity.dto.pago.EstadoPagoRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.pago.PagoRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.pago.PagoResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ResponseMapper;
+import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
+import com.uade.tpo.foodmarketplace.exceptions.pago.PagoNotFoundException;
 import com.uade.tpo.foodmarketplace.service.pago.PagoService;
 
 @RestController
@@ -28,30 +30,30 @@ public class PagosController {
     private PagoService pagoService;
 
     @GetMapping
-    public ResponseEntity<List<PagoResponse>> getPagos() {
-        return ResponseEntity.ok(pagoService.getPagos().stream().map(ResponseMapper::pago).toList());
+    public ResponseEntity<ApiResponse<List<PagoResponse>>> getPagos() {
+        List<PagoResponse> data=pagoService.getPagos().stream().map(ResponseMapper::pago).toList();
+        return ResponseEntity.ok(ApiResponse.ok(data.isEmpty()?"No hay pagos registrados para mostrar.":"Pagos obtenidos correctamente", data.isEmpty()?null:data));
     }
 
     @GetMapping("/{pagoId}")
-    public ResponseEntity<PagoResponse> getPagoById(@PathVariable("pagoId") Long pagoId) {
-        return pagoService.getPagoById(pagoId).map(ResponseMapper::pago).map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<ApiResponse<PagoResponse>> getPagoById(@PathVariable("pagoId") Long pagoId) {
+        return ResponseEntity.ok(ApiResponse.ok("Pago obtenido correctamente",pagoService.getPagoById(pagoId).map(ResponseMapper::pago).orElseThrow(PagoNotFoundException::new)));
     }
 
     @PostMapping("createPago")
-    public ResponseEntity<PagoResponse> createPago(@Valid @RequestBody PagoRequest pagoRequest) {
+    public ResponseEntity<ApiResponse<PagoResponse>> createPago(@Valid @RequestBody PagoRequest pagoRequest) {
         var result = pagoService.createPago(
                 pagoRequest.getMedioPago(),
                 pagoRequest.getPedidoId());
 
         return ResponseEntity
                 .created(URI.create("/pagos/" + result.getId()))
-                .body(ResponseMapper.pago(result));
+                .body(ApiResponse.ok("Pago creado correctamente",ResponseMapper.pago(result)));
     }
 
     @PatchMapping("/{pagoId}/estado")
-    public ResponseEntity<PagoResponse> actualizarEstadoPago(@PathVariable("pagoId") Long pagoId,
+    public ResponseEntity<ApiResponse<PagoResponse>> actualizarEstadoPago(@PathVariable("pagoId") Long pagoId,
             @Valid @RequestBody EstadoPagoRequest estadoPagoRequest) {
-        return ResponseEntity.ok(ResponseMapper.pago(pagoService.actualizarEstadoPago(pagoId, estadoPagoRequest.getEstado())));
+        return ResponseEntity.ok(ApiResponse.ok("Pago actualizado correctamente",ResponseMapper.pago(pagoService.actualizarEstadoPago(pagoId, estadoPagoRequest.getEstado()))));
     }
 }

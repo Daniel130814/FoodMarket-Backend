@@ -16,6 +16,6 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
     public void handle(HttpServletRequest request, HttpServletResponse response,
             AccessDeniedException exception) throws IOException {
         RestAuthenticationEntryPoint.write(response, request, HttpServletResponse.SC_FORBIDDEN,
-                "Forbidden", "No tenés permisos para acceder a este recurso");
+                "No tenés permisos para realizar esta operación");
     }
 }

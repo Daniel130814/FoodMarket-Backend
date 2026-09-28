@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,7 +18,6 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
 
 import com.uade.tpo.foodmarketplace.entity.carrito.Carrito;
 import com.uade.tpo.foodmarketplace.entity.carrito.ItemCarrito;
@@ -29,6 +29,7 @@ import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.repository.carrito.CarritoRepository;
 import com.uade.tpo.foodmarketplace.repository.carrito.ItemCarritoRepository;
 import com.uade.tpo.foodmarketplace.repository.plato.PlatoRepository;
+import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
 import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 import com.uade.tpo.foodmarketplace.service.order.OrderService;
 
@@ -44,42 +45,44 @@ class CarritoServiceImplTest {
     @Mock private PlatoRepository platoRepository;
     @Mock private OrderService orderService;
     @Mock private AuthenticatedUserService authenticatedUserService;
-    @Mock private CarritoCreationService carritoCreationService;
+    @Mock private UserRepository userRepository;
     @InjectMocks private CarritoServiceImpl carritoService;
 
     @Test
-    void creaElCarritoLazyYLoBloqueaAntesDeUsarlo() {
+    void creaElCarritoLazyBajoElLockDelClienteYEnLaMismaTransaccion() {
         User cliente = cliente();
         Carrito carrito = carrito(cliente);
         when(authenticatedUserService.getCurrentUser()).thenReturn(cliente);
+        when(carritoRepository.findByClienteId(CLIENTE_ID)).thenReturn(Optional.empty());
+        when(userRepository.findByIdForUpdate(CLIENTE_ID)).thenReturn(Optional.of(cliente));
         when(carritoRepository.findByClienteIdForUpdate(CLIENTE_ID))
-                .thenReturn(Optional.empty(), Optional.of(carrito));
+                .thenReturn(Optional.empty());
+        when(carritoRepository.saveAndFlush(any(Carrito.class))).thenReturn(carrito);
 
         var respuesta = carritoService.getMiCarrito();
 
         assertEquals(CARRITO_ID, respuesta.id());
-        InOrder orden = inOrder(carritoRepository, carritoCreationService);
+        InOrder orden = inOrder(carritoRepository, userRepository);
+        orden.verify(carritoRepository).findByClienteId(CLIENTE_ID);
+        orden.verify(userRepository).findByIdForUpdate(CLIENTE_ID);
         orden.verify(carritoRepository).findByClienteIdForUpdate(CLIENTE_ID);
-        orden.verify(carritoCreationService).crearCarrito(CLIENTE_ID);
-        orden.verify(carritoRepository).findByClienteIdForUpdate(CLIENTE_ID);
+        orden.verify(carritoRepository).saveAndFlush(any(Carrito.class));
     }
 
     @Test
-    void recuperaElCarritoQueOtraRequestCreoTrasElUniqueConocido() {
+    void usaElCarritoCreadoPorOtraRequestDespuesDelLockDelCliente() {
         User cliente = cliente();
         Carrito carrito = carrito(cliente);
         when(authenticatedUserService.getCurrentUser()).thenReturn(cliente);
+        when(carritoRepository.findByClienteId(CLIENTE_ID)).thenReturn(Optional.empty());
+        when(userRepository.findByIdForUpdate(CLIENTE_ID)).thenReturn(Optional.of(cliente));
         when(carritoRepository.findByClienteIdForUpdate(CLIENTE_ID))
-                .thenReturn(Optional.empty(), Optional.of(carrito));
-        DataIntegrityViolationException conflicto = new DataIntegrityViolationException(
-                "Duplicate entry for key uk_carritos_cliente");
-        org.mockito.Mockito.doThrow(conflicto).when(carritoCreationService).crearCarrito(CLIENTE_ID);
-        when(carritoCreationService.buscarCarritoCreado(CLIENTE_ID)).thenReturn(Optional.of(carrito));
+                .thenReturn(Optional.of(carrito));
 
         var respuesta = carritoService.getMiCarrito();
 
         assertEquals(CARRITO_ID, respuesta.id());
-        verify(carritoCreationService).buscarCarritoCreado(CLIENTE_ID);
+        verify(carritoRepository, never()).saveAndFlush(any(Carrito.class));
     }
 
     @Test
@@ -94,19 +97,21 @@ class CarritoServiceImplTest {
         item.setCantidad(1);
         carrito.getItems().add(item);
         when(authenticatedUserService.getCurrentUser()).thenReturn(cliente);
+        when(carritoRepository.findByClienteId(CLIENTE_ID)).thenReturn(Optional.of(carrito));
         when(carritoRepository.findByClienteIdForUpdate(CLIENTE_ID)).thenReturn(Optional.of(carrito));
         when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.of(plato));
         when(itemCarritoRepository.findByCarritoIdAndPlatoId(CARRITO_ID, PLATO_ID)).thenReturn(Optional.of(item));
-        when(itemCarritoRepository.save(item)).thenReturn(item);
 
         var respuesta = carritoService.agregarItem(new AddItemCarritoRequest(PLATO_ID, 1));
 
         assertEquals(2, item.getCantidad());
         assertEquals(2, respuesta.items().getFirst().cantidad());
         InOrder orden = inOrder(carritoRepository, itemCarritoRepository);
+        orden.verify(carritoRepository).findByClienteId(CLIENTE_ID);
         orden.verify(carritoRepository).findByClienteIdForUpdate(CLIENTE_ID);
         orden.verify(itemCarritoRepository).findByCarritoIdAndPlatoId(CARRITO_ID, PLATO_ID);
-        orden.verify(itemCarritoRepository).save(item);
+        orden.verify(itemCarritoRepository).saveAndFlush(item);
+        verify(userRepository, never()).findByIdForUpdate(CLIENTE_ID);
     }
 
     @Test
@@ -116,11 +121,12 @@ class CarritoServiceImplTest {
         Plato plato = plato();
         AtomicReference<ItemCarrito> itemCreado = new AtomicReference<>();
         when(authenticatedUserService.getCurrentUser()).thenReturn(cliente);
+        when(carritoRepository.findByClienteId(CLIENTE_ID)).thenReturn(Optional.of(carrito));
         when(carritoRepository.findByClienteIdForUpdate(CLIENTE_ID)).thenReturn(Optional.of(carrito));
         when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.of(plato));
         when(itemCarritoRepository.findByCarritoIdAndPlatoId(CARRITO_ID, PLATO_ID))
                 .thenAnswer(invocation -> Optional.ofNullable(itemCreado.get()));
-        when(itemCarritoRepository.save(any(ItemCarrito.class))).thenAnswer(invocation -> {
+        when(itemCarritoRepository.saveAndFlush(any(ItemCarrito.class))).thenAnswer(invocation -> {
             ItemCarrito guardado = invocation.getArgument(0);
             guardado.setId(4L);
             itemCreado.set(guardado);
@@ -132,17 +138,6 @@ class CarritoServiceImplTest {
 
         assertEquals(1, carrito.getItems().size());
         assertEquals(2, itemCreado.get().getCantidad());
-    }
-
-    @Test
-    void constraintDesconocidaNoSeTraduceComoCarreraDeCarrito() {
-        User cliente = cliente();
-        when(authenticatedUserService.getCurrentUser()).thenReturn(cliente);
-        when(carritoRepository.findByClienteIdForUpdate(CLIENTE_ID)).thenReturn(Optional.empty());
-        DataIntegrityViolationException desconocida = new DataIntegrityViolationException("foreign key inesperada");
-        org.mockito.Mockito.doThrow(desconocida).when(carritoCreationService).crearCarrito(CLIENTE_ID);
-
-        assertThrows(DataIntegrityViolationException.class, () -> carritoService.getMiCarrito());
     }
 
     private User cliente() {

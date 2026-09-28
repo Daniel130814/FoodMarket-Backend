@@ -1,79 +1,12 @@
 package com.uade.tpo.foodmarketplace.controllers.category;
-
-import java.net.URI;
-
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.uade.tpo.foodmarketplace.entity.category.Category;
-import com.uade.tpo.foodmarketplace.entity.dto.category.CategoryRequest;
-import com.uade.tpo.foodmarketplace.exceptions.category.CategoryDuplicateException;
-import com.uade.tpo.foodmarketplace.service.category.CategoryService;
-
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import jakarta.validation.Valid;
-
-@RestController
-@RequestMapping("categories")
-public class CategoriesController {
-
-    @Autowired
-    private CategoryService categoryService;
-
-    @GetMapping
-    public ResponseEntity<List<Category>> getCategories() {
-        return ResponseEntity.ok(categoryService.getCategories());
-    }
-
-    @GetMapping("/{categoryId}")
-    public ResponseEntity<Category> getCategoryById(@PathVariable("categoryId") Long categoryId) {
-        Optional<Category> category = categoryService.getCategoryById(categoryId);
-
-        if (category.isPresent()) {
-            return ResponseEntity.ok(category.get());
-        }
-
-        return ResponseEntity.notFound().build();
-    }
-
-    @PostMapping("createCategory")
-    public ResponseEntity<Category> createCategory(@Valid @RequestBody CategoryRequest categoryRequest)
-            throws CategoryDuplicateException {
-        Category result = categoryService.createCategory(
-                categoryRequest.getDescription());
-
-        return ResponseEntity
-                .created(URI.create("/categories/" + result.getId()))
-                .body(result);
-    }
-
-    /**
-     * Actualiza la descripción de una categoría identificada por el id de la URL.
-     */
-    @PutMapping("/{categoryId}")
-    public ResponseEntity<Category> updateCategory(@PathVariable("categoryId") Long categoryId,
-            @Valid @RequestBody CategoryRequest categoryRequest) {
-        Category result = categoryService.updateCategory(categoryId, categoryRequest.getDescription());
-        return ResponseEntity.ok(result);
-    }
-
-    /**
-     * Elimina una categoría únicamente cuando no está asignada a un plato.
-     */
-    @DeleteMapping("/{categoryId}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable("categoryId") Long categoryId) {
-        categoryService.deleteCategory(categoryId);
-        return ResponseEntity.noContent().build();
-    }
-
+import java.net.URI; import java.util.List;
+import org.springframework.http.ResponseEntity; import org.springframework.web.bind.annotation.*;
+import com.uade.tpo.foodmarketplace.entity.category.Category; import com.uade.tpo.foodmarketplace.entity.dto.category.CategoryRequest; import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse; import com.uade.tpo.foodmarketplace.exceptions.category.CategoryNotFoundException; import com.uade.tpo.foodmarketplace.service.category.CategoryService; import jakarta.validation.Valid;
+@RestController @RequestMapping("categories") public class CategoriesController {
+ private final CategoryService service; public CategoriesController(CategoryService service){this.service=service;}
+ @GetMapping public ResponseEntity<ApiResponse<List<Category>>> getCategories(){List<Category>d=service.getCategories();return ResponseEntity.ok(ApiResponse.ok(d.isEmpty()?"No hay categorías disponibles":"Categorías obtenidas correctamente",d.isEmpty()?null:d));}
+ @GetMapping("/{id}") public ResponseEntity<ApiResponse<Category>> get(@PathVariable Long id){return ResponseEntity.ok(ApiResponse.ok("Categoría obtenida correctamente",service.getCategoryById(id).orElseThrow(CategoryNotFoundException::new)));}
+ @PostMapping("createCategory") public ResponseEntity<ApiResponse<Category>> create(@Valid @RequestBody CategoryRequest r){Category c=service.createCategory(r.getDescription());return ResponseEntity.created(URI.create("/categories/"+c.getId())).body(ApiResponse.ok("Categoría creada correctamente",c));}
+ @PutMapping("/{id}") public ResponseEntity<ApiResponse<Category>> update(@PathVariable Long id,@Valid @RequestBody CategoryRequest r){return ResponseEntity.ok(ApiResponse.ok("Categoría actualizada correctamente",service.updateCategory(id,r.getDescription())));}
+ @DeleteMapping("/{id}") public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id){service.deleteCategory(id);return ResponseEntity.ok(ApiResponse.ok("Categoría eliminada correctamente",null));}
 }

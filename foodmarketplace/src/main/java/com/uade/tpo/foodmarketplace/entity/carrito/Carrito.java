@@ -14,12 +14,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Data;
 
 /** Carrito activo único por cliente; no reserva stock ni persiste precios calculados. */
 @Entity
 @Data
-@Table(name = "carritos")
+@Table(name = "carritos", uniqueConstraints = @UniqueConstraint(name = "uk_carrito_cliente", columnNames = "cliente_id"))
 public class Carrito {
 
     @Id
@@ -27,7 +28,7 @@ public class Carrito {
     private Long id;
 
     @OneToOne(optional = false)
-    @JoinColumn(name = "cliente_id", nullable = false, unique = true)
+    @JoinColumn(name = "cliente_id", nullable = false)
     private User cliente;
 
     @OneToMany(mappedBy = "carrito", cascade = CascadeType.ALL, orphanRemoval = true)

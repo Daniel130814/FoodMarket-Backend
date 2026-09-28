@@ -21,6 +21,7 @@ import com.uade.tpo.foodmarketplace.entity.dto.resena.ResenaUpdateRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ResponseMapper;
 import com.uade.tpo.foodmarketplace.service.resena.ResenaService;
+import com.uade.tpo.foodmarketplace.exceptions.resena.ResenaNotFoundException;
 
 @RestController
 @RequestMapping("resenas")
@@ -33,13 +34,12 @@ public class ResenasController {
     public ResponseEntity<ApiResponse<List<ResenaResponse>>> getResenas() {
         List<ResenaResponse> resenas = resenaService.getResenas().stream().map(ResponseMapper::resena).toList();
         String message = resenas.isEmpty() ? "No se encontraron reseñas" : "Reseñas obtenidas correctamente";
-        return ResponseEntity.ok(ApiResponse.ok(message, resenas));
+        return ResponseEntity.ok(ApiResponse.ok(message, resenas.isEmpty() ? null : resenas));
     }
 
     @GetMapping("/{resenaId}")
-    public ResponseEntity<ResenaResponse> getResenaById(@PathVariable("resenaId") Long resenaId) {
-        return resenaService.getResenaById(resenaId).map(ResponseMapper::resena).map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<ApiResponse<ResenaResponse>> getResenaById(@PathVariable("resenaId") Long resenaId) {
+        return ResponseEntity.ok(ApiResponse.ok("Reseña obtenida correctamente",resenaService.getResenaById(resenaId).map(ResponseMapper::resena).orElseThrow(ResenaNotFoundException::new)));
     }
 
     @GetMapping("/plato/{platoId}")
@@ -48,7 +48,7 @@ public class ResenasController {
                 .map(ResponseMapper::resena).toList();
         String message = resenas.isEmpty() ? "Todavía no hay reseñas para este plato"
                 : "Reseñas obtenidas correctamente";
-        return ResponseEntity.ok(ApiResponse.ok(message, resenas));
+        return ResponseEntity.ok(ApiResponse.ok(message, resenas.isEmpty() ? null : resenas));
     }
 
     @PostMapping("createResena")

@@ -1,6 +1,5 @@
 package com.uade.tpo.foodmarketplace.controllers.common;
 
-import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -38,6 +37,7 @@ import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.carrito.CarritoVacioException;
 import com.uade.tpo.foodmarketplace.exceptions.carrito.ItemCarritoNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.carrito.CarritoIntegrityConflictException;
+import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -45,14 +45,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({ BusinessRuleException.class, CantidadInvalidaException.class,
             CalificacionInvalidaException.class, CategoryDuplicateException.class, IngredienteDuplicateException.class,
             UserDuplicateException.class, CarritoVacioException.class })
-    ResponseEntity<ApiError> badRequest(RuntimeException ex, WebRequest request) {
+    ResponseEntity<ApiResponse<Void>> badRequest(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     @ExceptionHandler({ ResenaDuplicateException.class, ResourceInUseException.class, InvalidOrderStateException.class,
             InvalidSubPedidoStateException.class, InvalidPagoStateException.class, OrderCancelledException.class,
             CarritoIntegrityConflictException.class })
-    ResponseEntity<ApiError> conflict(RuntimeException ex, WebRequest request) {
+    ResponseEntity<ApiResponse<Void>> conflict(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
@@ -60,37 +60,39 @@ public class GlobalExceptionHandler {
             PagoNotFoundException.class, DomicilioNotFoundException.class, IngredienteNotFoundException.class,
             CategoryNotFoundException.class, ResenaNotFoundException.class, ChefProfileNotFoundException.class,
             SubPedidoNotFoundException.class, ItemCarritoNotFoundException.class })
-    ResponseEntity<ApiError> notFound(RuntimeException ex, WebRequest request) {
+    ResponseEntity<ApiResponse<Void>> notFound(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
     @ExceptionHandler(DomicilioNoPerteneceAlUsuarioException.class)
-    ResponseEntity<ApiError> forbidden(RuntimeException ex, WebRequest request) {
+    ResponseEntity<ApiResponse<Void>> forbidden(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    ResponseEntity<ApiError> accessDenied(AccessDeniedException ex, WebRequest request) {
-        return error(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    ResponseEntity<ApiResponse<Void>> accessDenied(AccessDeniedException ex, WebRequest request) {
+        return error(HttpStatus.FORBIDDEN, "No tenés permisos para realizar esta operación", request);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    ResponseEntity<ApiError> unauthorized(BadCredentialsException ex, WebRequest request) {
-        return error(HttpStatus.UNAUTHORIZED, "Credenciales inválidas", request);
+    ResponseEntity<ApiResponse<Void>> unauthorized(BadCredentialsException ex, WebRequest request) {
+        return error(HttpStatus.UNAUTHORIZED, "Necesitás iniciar sesión para realizar esta operación", request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    ResponseEntity<ApiError> validation(MethodArgumentNotValidException ex, WebRequest request) {
+    ResponseEntity<ApiResponse<Void>> validation(MethodArgumentNotValidException ex, WebRequest request) {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
         return error(HttpStatus.BAD_REQUEST, message, request);
     }
 
-    private ResponseEntity<ApiError> error(HttpStatus status, String message, WebRequest request) {
-        ApiError apiError = new ApiError(false, LocalDateTime.now(), status.value(), status.getReasonPhrase(), message,
-                null, request.getDescription(false).replace("uri=", ""));
+    @ExceptionHandler(Exception.class)
+    ResponseEntity<ApiResponse<Void>> unexpected(Exception ex, WebRequest request) {
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "Ocurrió un error interno al procesar la solicitud", request);
+    }
 
-        return ResponseEntity.status(status).body(apiError);
+    private ResponseEntity<ApiResponse<Void>> error(HttpStatus status, String message, WebRequest request) {
+        return ResponseEntity.status(status).body(ApiResponse.error(message));
     }
 }

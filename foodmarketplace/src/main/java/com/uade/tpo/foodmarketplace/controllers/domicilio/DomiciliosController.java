@@ -2,87 +2,26 @@ package com.uade.tpo.foodmarketplace.controllers.domicilio;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import jakarta.validation.Valid;
-
+import org.springframework.web.bind.annotation.*;
 import com.uade.tpo.foodmarketplace.entity.domicilio.Domicilio;
-import com.uade.tpo.foodmarketplace.entity.dto.domicilio.DomicilioRequest;
-import com.uade.tpo.foodmarketplace.entity.dto.domicilio.DomicilioUpdateRequest;
-import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
+import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
+import com.uade.tpo.foodmarketplace.entity.dto.domicilio.*;
+import com.uade.tpo.foodmarketplace.exceptions.domicilio.DomicilioNotFoundException;
 import com.uade.tpo.foodmarketplace.service.domicilio.DomicilioService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("domicilios")
 public class DomiciliosController {
-
-    @Autowired
-    private DomicilioService domicilioService;
-
-    @GetMapping
-    public ResponseEntity<List<Domicilio>> getDomicilios() {
-        return ResponseEntity.ok(domicilioService.getDomicilios());
-    }
-
-    @GetMapping("/{domicilioId}")
-    public ResponseEntity<Domicilio> getDomicilioById(@PathVariable("domicilioId") Long domicilioId) {
-        Optional<Domicilio> domicilio = domicilioService.getDomicilioById(domicilioId);
-
-        if (domicilio.isPresent()) {
-            return ResponseEntity.ok(domicilio.get());
-        }
-
-        return ResponseEntity.notFound().build();
-    }
-
-    @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<List<Domicilio>> getDomiciliosByUsuarioId(@PathVariable("usuarioId") Long usuarioId) {
-        return ResponseEntity.ok(domicilioService.getDomiciliosByUsuarioId(usuarioId));
-    }
-
-    @PostMapping("createDomicilio")
-    public ResponseEntity<Domicilio> createDomicilio(@Valid @RequestBody DomicilioRequest domicilioRequest)
-            throws UserNotFoundException {
-        Domicilio result = domicilioService.createDomicilio(
-                domicilioRequest.getCalle(),
-                domicilioRequest.getNumero(),
-                domicilioRequest.getPiso(),
-                domicilioRequest.getDepartamento(),
-                domicilioRequest.getCiudad(),
-                domicilioRequest.getProvincia(),
-                domicilioRequest.getCodigoPostal(),
-                domicilioRequest.getIndicacionesEntrega());
-
-        return ResponseEntity
-                .created(URI.create("/domicilios/" + result.getId()))
-                .body(result);
-    }
-
-    /**
-     * Actualiza un domicilio conservando deliberadamente su usuario propietario actual.
-     */
-    @PutMapping("/{domicilioId}")
-    public ResponseEntity<Domicilio> updateDomicilio(@PathVariable("domicilioId") Long domicilioId,
-            @Valid @RequestBody DomicilioUpdateRequest domicilioRequest) {
-        return ResponseEntity.ok(domicilioService.updateDomicilio(domicilioId, domicilioRequest));
-    }
-
-    /**
-     * Elimina un domicilio que no fue registrado en una orden.
-     */
-    @DeleteMapping("/{domicilioId}")
-    public ResponseEntity<Void> deleteDomicilio(@PathVariable("domicilioId") Long domicilioId) {
-        domicilioService.deleteDomicilio(domicilioId);
-        return ResponseEntity.noContent().build();
-    }
+    private final DomicilioService domicilioService;
+    public DomiciliosController(DomicilioService domicilioService) { this.domicilioService = domicilioService; }
+    @GetMapping public ResponseEntity<ApiResponse<List<DomicilioResponse>>> getDomicilios() { return lista(domicilioService.getDomicilios()); }
+    @GetMapping("/{id}") public ResponseEntity<ApiResponse<DomicilioResponse>> getDomicilioById(@PathVariable Long id) { return ResponseEntity.ok(ApiResponse.ok("Domicilio obtenido correctamente", map(domicilioService.getDomicilioById(id).orElseThrow(DomicilioNotFoundException::new)))); }
+    @GetMapping("/usuario/{id}") public ResponseEntity<ApiResponse<List<DomicilioResponse>>> getDomiciliosByUsuarioId(@PathVariable Long id) { return lista(domicilioService.getDomiciliosByUsuarioId(id)); }
+    @PostMapping("createDomicilio") public ResponseEntity<ApiResponse<DomicilioResponse>> createDomicilio(@Valid @RequestBody DomicilioRequest r) { Domicilio d=domicilioService.createDomicilio(r.getCalle(),r.getNumero(),r.getPiso(),r.getDepartamento(),r.getCiudad(),r.getProvincia(),r.getCodigoPostal(),r.getIndicacionesEntrega()); return ResponseEntity.created(URI.create("/domicilios/"+d.getId())).body(ApiResponse.ok("Domicilio creado correctamente",map(d))); }
+    @PutMapping("/{id}") public ResponseEntity<ApiResponse<DomicilioResponse>> updateDomicilio(@PathVariable Long id,@Valid @RequestBody DomicilioUpdateRequest r) { return ResponseEntity.ok(ApiResponse.ok("Domicilio actualizado correctamente",map(domicilioService.updateDomicilio(id,r)))); }
+    @DeleteMapping("/{id}") public ResponseEntity<ApiResponse<Void>> deleteDomicilio(@PathVariable Long id) { domicilioService.deleteDomicilio(id); return ResponseEntity.ok(ApiResponse.ok("Domicilio eliminado correctamente",null)); }
+    private ResponseEntity<ApiResponse<List<DomicilioResponse>>> lista(List<Domicilio> ds) { List<DomicilioResponse> data=ds.stream().map(this::map).toList(); return ResponseEntity.ok(ApiResponse.ok(data.isEmpty()?"No tenés domicilios registrados.":"Domicilios obtenidos correctamente",data.isEmpty()?null:data)); }
+    private DomicilioResponse map(Domicilio d) { return new DomicilioResponse(d.getId(),d.getCalle(),d.getNumero(),d.getPiso(),d.getDepartamento(),d.getCiudad(),d.getProvincia(),d.getCodigoPostal(),d.getIndicacionesEntrega()); }
 }

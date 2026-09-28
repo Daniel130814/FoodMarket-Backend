@@ -31,6 +31,7 @@ import com.uade.tpo.foodmarketplace.exceptions.plato.PlatoNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.carrito.CarritoRepository;
 import com.uade.tpo.foodmarketplace.repository.carrito.ItemCarritoRepository;
 import com.uade.tpo.foodmarketplace.repository.plato.PlatoRepository;
+import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
 import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 import com.uade.tpo.foodmarketplace.service.order.OrderService;
 import com.uade.tpo.foodmarketplace.service.plato.PrecioPlatoCalculator;
@@ -44,17 +45,17 @@ public class CarritoServiceImpl implements CarritoService {
     private final PlatoRepository platoRepository;
     private final OrderService orderService;
     private final AuthenticatedUserService authenticatedUserService;
-    private final CarritoCreationService carritoCreationService;
+    private final UserRepository userRepository;
 
     public CarritoServiceImpl(CarritoRepository carritoRepository, ItemCarritoRepository itemCarritoRepository,
             PlatoRepository platoRepository, OrderService orderService, AuthenticatedUserService authenticatedUserService,
-            CarritoCreationService carritoCreationService) {
+            UserRepository userRepository) {
         this.carritoRepository = carritoRepository;
         this.itemCarritoRepository = itemCarritoRepository;
         this.platoRepository = platoRepository;
         this.orderService = orderService;
         this.authenticatedUserService = authenticatedUserService;
-        this.carritoCreationService = carritoCreationService;
+        this.userRepository = userRepository;
     }
 
     /** Obtiene el carrito del JWT o crea uno vacío de forma lazy para el cliente. */
@@ -78,7 +79,7 @@ public class CarritoServiceImpl implements CarritoService {
         if (item.getId() == null) {
             carrito.getItems().add(item);
         }
-        itemCarritoRepository.save(item);
+        guardarItem(item);
         return toResponse(carrito);
     }
 
@@ -90,7 +91,7 @@ public class CarritoServiceImpl implements CarritoService {
         ItemCarrito item = obtenerItemPropio(itemId, carrito);
         validarCantidadContraStock(obtenerPlatoDisponible(item.getPlato().getId()), request.cantidad());
         item.setCantidad(request.cantidad());
-        itemCarritoRepository.save(item);
+        guardarItem(item);
         return toResponse(carrito);
     }
 
@@ -139,25 +140,49 @@ public class CarritoServiceImpl implements CarritoService {
 
     private Carrito obtenerOCrearCarrito() {
         User cliente = obtenerClienteActual();
-        return carritoRepository.findByClienteIdForUpdate(cliente.getId())
-                .orElseGet(() -> crearYBloquearCarrito(cliente.getId()));
+        return carritoRepository.findByClienteId(cliente.getId())
+                .map(ignored -> bloquearCarritoExistente(cliente.getId()))
+                .orElseGet(() -> crearCarritoBajoLockDeCliente(cliente.getId()));
     }
 
-    private Carrito crearYBloquearCarrito(Long clienteId) {
-        try {
-            carritoCreationService.crearCarrito(clienteId);
-        } catch (DataIntegrityViolationException exception) {
-            if (!CarritoConstraintClassifier.esClienteUnico(exception)) {
-                throw exception;
-            }
-            if (carritoCreationService.buscarCarritoCreado(clienteId).isEmpty()) {
-                throw new CarritoIntegrityConflictException(
-                        "No se pudo recuperar el carrito creado concurrentemente");
-            }
-        }
-
+    private Carrito bloquearCarritoExistente(Long clienteId) {
         return carritoRepository.findByClienteIdForUpdate(clienteId)
-                .orElseThrow(() -> new CarritoIntegrityConflictException("No se pudo crear el carrito del cliente"));
+                .orElseThrow(() -> new CarritoIntegrityConflictException("No se pudo bloquear el carrito del cliente"));
+    }
+
+    /**
+     * El User siempre existe: bloquearlo evita consultar con FOR UPDATE un carrito inexistente.
+     * Tras el lock se hace una lectura actual del carrito; si sigue ausente, el INSERT ocurre en esta misma TX.
+     */
+    private Carrito crearCarritoBajoLockDeCliente(Long clienteId) {
+        User clienteBloqueado = userRepository.findByIdForUpdate(clienteId)
+                .orElseThrow(() -> new CarritoIntegrityConflictException("No se pudo bloquear el cliente del carrito"));
+        return carritoRepository.findByClienteIdForUpdate(clienteId)
+                .orElseGet(() -> guardarNuevoCarrito(clienteBloqueado));
+    }
+
+    private Carrito guardarNuevoCarrito(User cliente) {
+        Carrito carrito = new Carrito();
+        carrito.setCliente(cliente);
+        try {
+            return carritoRepository.saveAndFlush(carrito);
+        } catch (DataIntegrityViolationException exception) {
+            if (CarritoConstraintClassifier.esClienteUnico(exception)) {
+                throw new CarritoIntegrityConflictException("Conflicto al crear el carrito del cliente");
+            }
+            throw exception;
+        }
+    }
+
+    private void guardarItem(ItemCarrito item) {
+        try {
+            itemCarritoRepository.saveAndFlush(item);
+        } catch (DataIntegrityViolationException exception) {
+            if (CarritoConstraintClassifier.esItemUnico(exception)) {
+                throw new CarritoIntegrityConflictException("Conflicto al guardar el item del carrito");
+            }
+            throw exception;
+        }
     }
 
     private User obtenerClienteActual() {
