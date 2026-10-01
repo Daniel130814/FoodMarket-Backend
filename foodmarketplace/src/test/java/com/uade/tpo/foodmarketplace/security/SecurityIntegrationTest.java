@@ -7,15 +7,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 /** Comprueba la frontera HTTP: 401 identifica falta de autenticacion y 403 falta de permisos. */
-@SpringBootTest
+@org.springframework.test.context.ActiveProfiles("test")
+@org.springframework.boot.test.context.SpringBootTest
+@org.testcontainers.junit.jupiter.Testcontainers(disabledWithoutDocker = true)
 @AutoConfigureMockMvc
-class SecurityIntegrationTest {
+class SecurityIntegrationTest extends com.uade.tpo.foodmarketplace.integration.MySqlIntegrationTestBase {
 
     @Autowired MockMvc mockMvc;
 

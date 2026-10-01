@@ -11,9 +11,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.uade.tpo.foodmarketplace.entity.dto.common.ResponseMapper;
+import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.order.EstadoSubPedidoRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.order.SubPedidoChefResponse;
 import com.uade.tpo.foodmarketplace.service.order.SubPedidoChefService;
+import com.uade.tpo.foodmarketplace.exceptions.order.SubPedidoNotFoundException;
 
 import jakarta.validation.Valid;
 
@@ -34,40 +36,45 @@ public class SubPedidosChefController {
      * Devuelve un subpedido como DTO de respuesta sin referencias circulares de JPA.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<SubPedidoChefResponse> getById(@PathVariable Long id) {
-        return subPedidoChefService.getSubPedidoById(id)
-                .map(ResponseMapper::subPedido)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<ApiResponse<SubPedidoChefResponse>> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok("Subpedido obtenido correctamente",
+                subPedidoChefService.getSubPedidoById(id).map(ResponseMapper::subPedido)
+                        .orElseThrow(SubPedidoNotFoundException::new)));
     }
 
     /**
      * Devuelve todos los subpedidos generados para la orden solicitada.
      */
     @GetMapping("/order/{orderId}")
-    public ResponseEntity<List<SubPedidoChefResponse>> getByOrder(@PathVariable Long orderId) {
-        return ResponseEntity.ok(subPedidoChefService.getSubPedidosByOrderId(orderId).stream()
+    public ResponseEntity<ApiResponse<List<SubPedidoChefResponse>>> getByOrder(@PathVariable Long orderId) {
+        List<SubPedidoChefResponse> subPedidos = subPedidoChefService.getSubPedidosByOrderId(orderId).stream()
                 .map(ResponseMapper::subPedido)
-                .toList());
+                .toList();
+        return ResponseEntity.ok(ApiResponse.ok(subPedidos.isEmpty()
+                ? "No hay subpedidos disponibles para este pedido"
+                : "Subpedidos del pedido obtenidos correctamente", subPedidos.isEmpty() ? null : subPedidos));
     }
 
     /**
      * Devuelve todos los subpedidos actualmente asignados al chef solicitado.
      */
     @GetMapping("/chef/{chefId}")
-    public ResponseEntity<List<SubPedidoChefResponse>> getByChef(@PathVariable Long chefId) {
-        return ResponseEntity.ok(subPedidoChefService.getSubPedidosByChefId(chefId).stream()
+    public ResponseEntity<ApiResponse<List<SubPedidoChefResponse>>> getByChef(@PathVariable Long chefId) {
+        List<SubPedidoChefResponse> subPedidos = subPedidoChefService.getSubPedidosByChefId(chefId).stream()
                 .map(ResponseMapper::subPedido)
-                .toList());
+                .toList();
+        return ResponseEntity.ok(ApiResponse.ok(subPedidos.isEmpty()
+                ? "No hay subpedidos disponibles para este chef"
+                : "Subpedidos del chef obtenidos correctamente", subPedidos.isEmpty() ? null : subPedidos));
     }
 
     /**
      * Aplica una transición de estado validada a un subpedido.
      */
     @PatchMapping("/{id}/estado")
-    public ResponseEntity<SubPedidoChefResponse> actualizarEstado(@PathVariable Long id,
+    public ResponseEntity<ApiResponse<SubPedidoChefResponse>> actualizarEstado(@PathVariable Long id,
             @Valid @RequestBody EstadoSubPedidoRequest request) {
-        return ResponseEntity.ok(ResponseMapper.subPedido(
-                subPedidoChefService.actualizarEstado(id, request.getEstado())));
+        return ResponseEntity.ok(ApiResponse.ok("Estado del subpedido actualizado correctamente",
+                ResponseMapper.subPedido(subPedidoChefService.actualizarEstado(id, request.getEstado()))));
     }
 }

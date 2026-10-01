@@ -1,6 +1,7 @@
 package com.uade.tpo.foodmarketplace.controllers.resena;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -46,7 +47,7 @@ class ResenasControllerTest {
 
         assertEquals(true, response.success());
         assertEquals("Todavía no hay reseñas para este plato", response.message());
-        assertEquals(List.of(), response.data());
+        assertNull(response.data());
     }
 
     private Resena resena(Long id) {

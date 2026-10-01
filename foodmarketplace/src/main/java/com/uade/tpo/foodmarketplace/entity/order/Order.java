@@ -6,14 +6,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import com.uade.tpo.foodmarketplace.entity.domicilio.Domicilio;
 import com.uade.tpo.foodmarketplace.entity.pago.Pago;
 import com.uade.tpo.foodmarketplace.entity.user.User;
 
 @Entity
-@Data
+@Getter
+@Setter
 @Table(name = "orders")
 public class Order {
     @Id

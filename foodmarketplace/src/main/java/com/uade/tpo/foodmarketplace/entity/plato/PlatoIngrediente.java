@@ -12,12 +12,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import com.uade.tpo.foodmarketplace.entity.ingrediente.Ingrediente;
 
 @Entity
-@Data
+@Getter
+@Setter
 @Table(name = "plato_ingredientes", uniqueConstraints = @UniqueConstraint(columnNames = {"plato_id", "ingrediente_id"}))
 public class PlatoIngrediente {
     @Id

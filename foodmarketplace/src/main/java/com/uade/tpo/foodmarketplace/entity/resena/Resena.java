@@ -11,13 +11,15 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import com.uade.tpo.foodmarketplace.entity.plato.Plato;
 import com.uade.tpo.foodmarketplace.entity.user.User;
 
 @Entity
-@Data
+@Getter
+@Setter
 @Table(name = "resenas", uniqueConstraints = @UniqueConstraint(
         name = "uk_resena_cliente_plato",
         columnNames = { "cliente_id", "plato_id" }))

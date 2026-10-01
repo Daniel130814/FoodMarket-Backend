@@ -199,7 +199,7 @@ public class OrderServiceImpl implements OrderService {
         }
         // La consulta ocurre luego de obtener el lock de Order en los comandos que actualizan subpedidos.
         // Así se calcula con los estados confirmados más recientes y no con una colección previa al lock.
-        List<SubPedidoChef> subPedidosActuales = subPedidoChefRepository.findByPedidoId(order.getId());
+        List<SubPedidoChef> subPedidosActuales = subPedidoChefRepository.findByPedidoIdForUpdate(order.getId());
         if (subPedidosActuales.isEmpty()) {
             order.setEstado(EstadoPedido.PENDIENTE);
             return orderRepository.save(order);

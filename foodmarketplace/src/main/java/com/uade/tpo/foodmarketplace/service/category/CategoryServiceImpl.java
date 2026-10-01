@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.uade.tpo.foodmarketplace.entity.category.Category;
 import com.uade.tpo.foodmarketplace.exceptions.category.CategoryDuplicateException;
@@ -12,6 +13,7 @@ import com.uade.tpo.foodmarketplace.exceptions.category.CategoryNotFoundExceptio
 import com.uade.tpo.foodmarketplace.exceptions.common.ResourceInUseException;
 import com.uade.tpo.foodmarketplace.repository.category.CategoryRepository;
 import com.uade.tpo.foodmarketplace.repository.plato.PlatoRepository;
+import com.uade.tpo.foodmarketplace.service.common.KnownUniqueConstraint;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
@@ -41,7 +43,7 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         Category category = new Category(description);
-        return categoryRepository.save(category);
+        return saveWithUniqueCheck(category);
     }
 
     /**
@@ -56,7 +58,18 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         category.setDescription(description);
-        return categoryRepository.save(category);
+        return saveWithUniqueCheck(category);
+    }
+
+    private Category saveWithUniqueCheck(Category category) {
+        try {
+            return categoryRepository.saveAndFlush(category);
+        } catch (DataIntegrityViolationException exception) {
+            if (KnownUniqueConstraint.matches(exception, "uk_category_description")) {
+                throw new CategoryDuplicateException();
+            }
+            throw exception;
+        }
     }
 
     /**

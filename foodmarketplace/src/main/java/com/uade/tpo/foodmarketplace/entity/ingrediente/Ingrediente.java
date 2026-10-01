@@ -9,13 +9,16 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.Data;
+import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.Setter;
 
 import com.uade.tpo.foodmarketplace.entity.plato.PlatoIngrediente;
 
 @Entity
-@Data
-@Table(name = "ingredientes")
+@Getter
+@Setter
+@Table(name = "ingredientes", uniqueConstraints = @UniqueConstraint(name = "uk_ingrediente_nombre", columnNames = "nombre"))
 public class Ingrediente {
 
     @Id

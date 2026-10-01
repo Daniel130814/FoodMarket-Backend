@@ -5,12 +5,14 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.uade.tpo.foodmarketplace.entity.ingrediente.Ingrediente;
 import com.uade.tpo.foodmarketplace.exceptions.common.ResourceInUseException;
 import com.uade.tpo.foodmarketplace.exceptions.ingrediente.IngredienteDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.ingrediente.IngredienteNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.ingrediente.IngredienteRepository;
+import com.uade.tpo.foodmarketplace.service.common.KnownUniqueConstraint;
 
 @Service
 public class IngredienteServiceImpl implements IngredienteService {
@@ -38,7 +40,7 @@ public class IngredienteServiceImpl implements IngredienteService {
         ingrediente.setNombre(nombre);
         ingrediente.setDescripcion(descripcion);
 
-        return ingredienteRepository.save(ingrediente);
+        return saveWithUniqueCheck(ingrediente);
     }
 
     /**
@@ -55,7 +57,18 @@ public class IngredienteServiceImpl implements IngredienteService {
 
         ingrediente.setNombre(nombre);
         ingrediente.setDescripcion(descripcion);
-        return ingredienteRepository.save(ingrediente);
+        return saveWithUniqueCheck(ingrediente);
+    }
+
+    private Ingrediente saveWithUniqueCheck(Ingrediente ingrediente) {
+        try {
+            return ingredienteRepository.saveAndFlush(ingrediente);
+        } catch (DataIntegrityViolationException exception) {
+            if (KnownUniqueConstraint.matches(exception, "uk_ingrediente_nombre")) {
+                throw new IngredienteDuplicateException();
+            }
+            throw exception;
+        }
     }
 
     /**

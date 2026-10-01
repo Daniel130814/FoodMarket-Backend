@@ -7,10 +7,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 
 @Data
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(name = "uk_category_description", columnNames = "description"))
 
 public class Category {
 
@@ -25,7 +28,7 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
+    @Column(nullable = false)
     private String description;
 
 }

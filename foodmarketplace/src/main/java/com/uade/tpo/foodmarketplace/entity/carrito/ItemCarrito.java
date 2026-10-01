@@ -11,11 +11,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 /** Representa una cantidad solicitada; sus precios se calculan desde el plato al responder o comprar. */
 @Entity
-@Data
+@Getter
+@Setter
 @Table(name = "items_carrito", uniqueConstraints = @UniqueConstraint(name = "uk_item_carrito_plato", columnNames = {
         "carrito_id", "plato_id" }))
 public class ItemCarrito {

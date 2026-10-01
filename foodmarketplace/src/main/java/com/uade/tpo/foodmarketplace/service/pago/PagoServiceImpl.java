@@ -73,11 +73,12 @@ public class PagoServiceImpl implements PagoService {
         if (pedido.getEstado() == EstadoPedido.CANCELADO) {
             throw new OrderCancelledException();
         }
-        if (pedido.isPagoBloqueado() || pagoRepository.countByPedidoIdAndEstado(pedidoId, EstadoPago.RECHAZADO) >= 5) {
+        List<Pago> pagosActuales = pagoRepository.findByPedidoIdForUpdate(pedidoId);
+        if (pedido.isPagoBloqueado() || contarRechazados(pagosActuales) >= 5) {
             pedido.setPagoBloqueado(true);
             throw new BusinessRuleException("Los intentos de pago para esta orden estan bloqueados");
         }
-        if (pagoRepository.existsByPedidoIdAndEstado(pedidoId, EstadoPago.APROBADO)) {
+        if (tieneAprobado(pagosActuales)) {
             throw new InvalidPagoStateException("La orden ya posee un pago aprobado");
         }
 
@@ -104,18 +105,19 @@ public class PagoServiceImpl implements PagoService {
                 .orElseThrow(PedidoNotFoundException::new);
         Pago pago = pagoRepository.findByIdForUpdate(pagoId)
                 .orElseThrow(PagoNotFoundException::new);
+        List<Pago> pagosActuales = pagoRepository.findByPedidoIdForUpdate(pedidoId);
 
         // Todas las verificaciones dependen del estado leído bajo el lock de la misma Order.
         validarTransicion(pago.getEstado(), estado);
         if (estado == EstadoPago.APROBADO && pedido.getEstado() == EstadoPedido.CANCELADO) {
             throw new OrderCancelledException();
         }
-        if (estado == EstadoPago.APROBADO && pagoRepository.existsByPedidoIdAndEstado(pedido.getId(), EstadoPago.APROBADO)
+        if (estado == EstadoPago.APROBADO && tieneAprobado(pagosActuales)
                 && pago.getEstado() != EstadoPago.APROBADO) {
             throw new InvalidPagoStateException("La orden ya posee un pago aprobado");
         }
         if (estado == EstadoPago.RECHAZADO && pago.getEstado() != EstadoPago.RECHAZADO) {
-            long rechazados = pagoRepository.countByPedidoIdAndEstado(pedido.getId(), EstadoPago.RECHAZADO);
+            long rechazados = contarRechazados(pagosActuales);
             if (rechazados >= 5) {
                 throw new BusinessRuleException("Se alcanzo el maximo de intentos rechazados");
             }
@@ -164,5 +166,13 @@ public class PagoServiceImpl implements PagoService {
             throw new InvalidPagoStateException(
                     "Transicion invalida de " + estadoActual + " a " + nuevoEstado + " para el pago");
         }
+    }
+
+    private boolean tieneAprobado(List<Pago> pagos) {
+        return pagos.stream().anyMatch(p -> p.getEstado() == EstadoPago.APROBADO);
+    }
+
+    private long contarRechazados(List<Pago> pagos) {
+        return pagos.stream().filter(p -> p.getEstado() == EstadoPago.RECHAZADO).count();
     }
 }

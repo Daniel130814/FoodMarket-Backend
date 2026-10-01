@@ -4,6 +4,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -43,7 +44,7 @@ import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler({ BusinessRuleException.class, CantidadInvalidaException.class,
-            CalificacionInvalidaException.class, CategoryDuplicateException.class, IngredienteDuplicateException.class,
+            CalificacionInvalidaException.class,
             UserDuplicateException.class, CarritoVacioException.class })
     ResponseEntity<ApiResponse<Void>> badRequest(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
@@ -51,7 +52,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({ ResenaDuplicateException.class, ResourceInUseException.class, InvalidOrderStateException.class,
             InvalidSubPedidoStateException.class, InvalidPagoStateException.class, OrderCancelledException.class,
-            CarritoIntegrityConflictException.class })
+            CarritoIntegrityConflictException.class, CategoryDuplicateException.class, IngredienteDuplicateException.class })
     ResponseEntity<ApiResponse<Void>> conflict(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
@@ -85,6 +86,11 @@ public class GlobalExceptionHandler {
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
         return error(HttpStatus.BAD_REQUEST, message, request);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ResponseEntity<ApiResponse<Void>> malformedRequest(HttpMessageNotReadableException ex, WebRequest request) {
+        return error(HttpStatus.BAD_REQUEST, "La solicitud contiene un valor inválido", request);
     }
 
     @ExceptionHandler(Exception.class)

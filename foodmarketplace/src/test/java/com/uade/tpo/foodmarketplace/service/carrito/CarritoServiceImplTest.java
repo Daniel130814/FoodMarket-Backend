@@ -100,7 +100,7 @@ class CarritoServiceImplTest {
         when(carritoRepository.findByClienteId(CLIENTE_ID)).thenReturn(Optional.of(carrito));
         when(carritoRepository.findByClienteIdForUpdate(CLIENTE_ID)).thenReturn(Optional.of(carrito));
         when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.of(plato));
-        when(itemCarritoRepository.findByCarritoIdAndPlatoId(CARRITO_ID, PLATO_ID)).thenReturn(Optional.of(item));
+        when(itemCarritoRepository.findByCarritoIdAndPlatoIdForUpdate(CARRITO_ID, PLATO_ID)).thenReturn(Optional.of(item));
 
         var respuesta = carritoService.agregarItem(new AddItemCarritoRequest(PLATO_ID, 1));
 
@@ -109,7 +109,7 @@ class CarritoServiceImplTest {
         InOrder orden = inOrder(carritoRepository, itemCarritoRepository);
         orden.verify(carritoRepository).findByClienteId(CLIENTE_ID);
         orden.verify(carritoRepository).findByClienteIdForUpdate(CLIENTE_ID);
-        orden.verify(itemCarritoRepository).findByCarritoIdAndPlatoId(CARRITO_ID, PLATO_ID);
+        orden.verify(itemCarritoRepository).findByCarritoIdAndPlatoIdForUpdate(CARRITO_ID, PLATO_ID);
         orden.verify(itemCarritoRepository).saveAndFlush(item);
         verify(userRepository, never()).findByIdForUpdate(CLIENTE_ID);
     }
@@ -124,7 +124,7 @@ class CarritoServiceImplTest {
         when(carritoRepository.findByClienteId(CLIENTE_ID)).thenReturn(Optional.of(carrito));
         when(carritoRepository.findByClienteIdForUpdate(CLIENTE_ID)).thenReturn(Optional.of(carrito));
         when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.of(plato));
-        when(itemCarritoRepository.findByCarritoIdAndPlatoId(CARRITO_ID, PLATO_ID))
+        when(itemCarritoRepository.findByCarritoIdAndPlatoIdForUpdate(CARRITO_ID, PLATO_ID))
                 .thenAnswer(invocation -> Optional.ofNullable(itemCreado.get()));
         when(itemCarritoRepository.saveAndFlush(any(ItemCarrito.class))).thenAnswer(invocation -> {
             ItemCarrito guardado = invocation.getArgument(0);

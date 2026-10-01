@@ -71,7 +71,7 @@ public class CarritoServiceImpl implements CarritoService {
     public CarritoResponse agregarItem(AddItemCarritoRequest request) {
         Carrito carrito = obtenerOCrearCarrito();
         Plato plato = obtenerPlatoDisponible(request.platoId());
-        ItemCarrito item = itemCarritoRepository.findByCarritoIdAndPlatoId(carrito.getId(), plato.getId())
+        ItemCarrito item = itemCarritoRepository.findByCarritoIdAndPlatoIdForUpdate(carrito.getId(), plato.getId())
                 .orElseGet(() -> nuevoItem(carrito, plato));
         int cantidadFinal = item.getCantidad() == null ? request.cantidad() : item.getCantidad() + request.cantidad();
         validarCantidadContraStock(plato, cantidadFinal);

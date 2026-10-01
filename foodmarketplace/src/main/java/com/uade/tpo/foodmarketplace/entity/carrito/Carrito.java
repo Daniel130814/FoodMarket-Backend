@@ -15,11 +15,13 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 /** Carrito activo único por cliente; no reserva stock ni persiste precios calculados. */
 @Entity
-@Data
+@Getter
+@Setter
 @Table(name = "carritos", uniqueConstraints = @UniqueConstraint(name = "uk_carrito_cliente", columnNames = "cliente_id"))
 public class Carrito {
 

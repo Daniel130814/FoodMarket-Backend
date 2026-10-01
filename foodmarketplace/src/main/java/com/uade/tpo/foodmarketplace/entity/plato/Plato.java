@@ -22,13 +22,15 @@ import jakarta.persistence.Version;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.CascadeType;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import com.uade.tpo.foodmarketplace.entity.category.Category;
 import com.uade.tpo.foodmarketplace.entity.user.User;
 
 @Entity
-@Data
+@Getter
+@Setter
 @Table(name = "platos")
 public class Plato {
 

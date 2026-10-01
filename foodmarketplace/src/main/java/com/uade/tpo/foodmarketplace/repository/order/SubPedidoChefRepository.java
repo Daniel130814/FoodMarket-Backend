@@ -33,4 +33,8 @@ public interface SubPedidoChefRepository extends JpaRepository<SubPedidoChef, Lo
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from SubPedidoChef s where s.id = :subPedidoId")
     Optional<SubPedidoChef> findByIdForUpdate(@Param("subPedidoId") Long subPedidoId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from SubPedidoChef s where s.pedido.id = :pedidoId")
+    List<SubPedidoChef> findByPedidoIdForUpdate(@Param("pedidoId") Long pedidoId);
 }

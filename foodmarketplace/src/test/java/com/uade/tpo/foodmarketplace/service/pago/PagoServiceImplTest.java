@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,7 @@ class PagoServiceImplTest {
         Order order = order();
         Pago pago = pago(PAGO_A_ID, order, EstadoPago.PENDIENTE);
         prepararActualizacion(PAGO_A_ID, order, pago);
-        when(pagoRepository.existsByPedidoIdAndEstado(ORDER_ID, EstadoPago.APROBADO)).thenReturn(false);
+        when(pagoRepository.findByPedidoIdForUpdate(ORDER_ID)).thenReturn(List.of());
         when(pagoRepository.save(pago)).thenReturn(pago);
 
         Pago resultado = pagoService.actualizarEstadoPago(PAGO_A_ID, EstadoPago.APROBADO);
@@ -66,7 +67,8 @@ class PagoServiceImplTest {
         Order order = order();
         Pago pago = pago(PAGO_B_ID, order, EstadoPago.PENDIENTE);
         prepararActualizacion(PAGO_B_ID, order, pago);
-        when(pagoRepository.existsByPedidoIdAndEstado(ORDER_ID, EstadoPago.APROBADO)).thenReturn(true);
+        when(pagoRepository.findByPedidoIdForUpdate(ORDER_ID))
+                .thenReturn(List.of(pago(PAGO_A_ID, order, EstadoPago.APROBADO)));
 
         InvalidPagoStateException exception = assertThrows(InvalidPagoStateException.class,
                 () -> pagoService.actualizarEstadoPago(PAGO_B_ID, EstadoPago.APROBADO));
@@ -81,7 +83,8 @@ class PagoServiceImplTest {
         Order order = order();
         Pago quinto = pago(PAGO_A_ID, order, EstadoPago.PENDIENTE);
         prepararActualizacion(PAGO_A_ID, order, quinto);
-        when(pagoRepository.countByPedidoIdAndEstado(ORDER_ID, EstadoPago.RECHAZADO)).thenReturn(4L);
+        when(pagoRepository.findByPedidoIdForUpdate(ORDER_ID))
+                .thenReturn(rechazados(order, 4));
         when(pagoRepository.save(quinto)).thenReturn(quinto);
 
         pagoService.actualizarEstadoPago(PAGO_A_ID, EstadoPago.RECHAZADO);
@@ -91,7 +94,8 @@ class PagoServiceImplTest {
 
         Pago sexto = pago(PAGO_B_ID, order, EstadoPago.PENDIENTE);
         prepararActualizacion(PAGO_B_ID, order, sexto);
-        when(pagoRepository.countByPedidoIdAndEstado(ORDER_ID, EstadoPago.RECHAZADO)).thenReturn(5L);
+        when(pagoRepository.findByPedidoIdForUpdate(ORDER_ID))
+                .thenReturn(rechazados(order, 5));
 
         assertThrows(BusinessRuleException.class, () -> pagoService.actualizarEstadoPago(PAGO_B_ID, EstadoPago.RECHAZADO));
         assertEquals(EstadoPago.PENDIENTE, sexto.getEstado());
@@ -101,6 +105,11 @@ class PagoServiceImplTest {
         when(pagoRepository.findPedidoIdById(pagoId)).thenReturn(Optional.of(ORDER_ID));
         when(orderRepository.findByIdForUpdate(ORDER_ID)).thenReturn(Optional.of(order));
         when(pagoRepository.findByIdForUpdate(pagoId)).thenReturn(Optional.of(pago));
+    }
+
+    private List<Pago> rechazados(Order order, int cantidad) {
+        return java.util.stream.IntStream.range(0, cantidad)
+                .mapToObj(i -> pago(200L + i, order, EstadoPago.RECHAZADO)).toList();
     }
 
     private Order order() {
