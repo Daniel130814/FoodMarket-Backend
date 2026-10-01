@@ -52,7 +52,7 @@ public class ResenasController {
     }
 
     @PostMapping("createResena")
-    public ResponseEntity<ResenaResponse> createResena(@Valid @RequestBody ResenaRequest resenaRequest) {
+    public ResponseEntity<ApiResponse<ResenaResponse>> createResena(@Valid @RequestBody ResenaRequest resenaRequest) {
         var result = resenaService.createResena(
                 resenaRequest.getCalificacion(),
                 resenaRequest.getComentario(),
@@ -60,24 +60,24 @@ public class ResenasController {
 
         return ResponseEntity
                 .created(URI.create("/resenas/" + result.getId()))
-                .body(ResponseMapper.resena(result));
+                .body(ApiResponse.ok("Reseña creada correctamente", ResponseMapper.resena(result)));
     }
 
     /**
      * Actualiza únicamente la calificación y el comentario de una reseña existente.
      */
     @PutMapping("/{resenaId}")
-    public ResponseEntity<ResenaResponse> updateResena(@PathVariable("resenaId") Long resenaId,
+    public ResponseEntity<ApiResponse<ResenaResponse>> updateResena(@PathVariable("resenaId") Long resenaId,
             @Valid @RequestBody ResenaUpdateRequest resenaRequest) {
-        return ResponseEntity.ok(ResponseMapper.resena(resenaService.updateResena(resenaId, resenaRequest)));
+        return ResponseEntity.ok(ApiResponse.ok("Reseña actualizada correctamente", ResponseMapper.resena(resenaService.updateResena(resenaId, resenaRequest))));
     }
 
     /**
      * Elimina una reseña existente.
      */
     @DeleteMapping("/{resenaId}")
-    public ResponseEntity<Void> deleteResena(@PathVariable("resenaId") Long resenaId) {
+    public ResponseEntity<ApiResponse<Void>> deleteResena(@PathVariable("resenaId") Long resenaId) {
         resenaService.deleteResena(resenaId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.ok("Reseña eliminada correctamente", null));
     }
 }

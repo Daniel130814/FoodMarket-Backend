@@ -41,34 +41,34 @@ public class CarritoController {
 
     /** Agrega un plato sin reservar stock. */
     @PostMapping("/items")
-    public ResponseEntity<CarritoResponse> agregarItem(@Valid @RequestBody AddItemCarritoRequest request) {
-        return ResponseEntity.ok(carritoService.agregarItem(request));
+    public ResponseEntity<ApiResponse<CarritoResponse>> agregarItem(@Valid @RequestBody AddItemCarritoRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Item agregado correctamente", carritoService.agregarItem(request)));
     }
 
     /** Cambia la cantidad de un item del carrito del cliente autenticado. */
     @PutMapping("/items/{itemId}")
-    public ResponseEntity<CarritoResponse> actualizarCantidad(@PathVariable Long itemId,
+    public ResponseEntity<ApiResponse<CarritoResponse>> actualizarCantidad(@PathVariable Long itemId,
             @Valid @RequestBody UpdateItemCarritoRequest request) {
-        return ResponseEntity.ok(carritoService.actualizarCantidad(itemId, request));
+        return ResponseEntity.ok(ApiResponse.ok("Cantidad actualizada correctamente", carritoService.actualizarCantidad(itemId, request)));
     }
 
     /** Elimina un único item del carrito. */
     @DeleteMapping("/items/{itemId}")
-    public ResponseEntity<Void> eliminarItem(@PathVariable Long itemId) {
+    public ResponseEntity<ApiResponse<Void>> eliminarItem(@PathVariable Long itemId) {
         carritoService.eliminarItem(itemId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.ok("Item eliminado correctamente", null));
     }
 
     /** Vacía el carrito sin modificar stock. */
     @DeleteMapping
-    public ResponseEntity<Void> vaciarCarrito() {
+    public ResponseEntity<ApiResponse<Void>> vaciarCarrito() {
         carritoService.vaciarCarrito();
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.ok("Carrito vaciado correctamente", null));
     }
 
     /** Convierte el carrito en una orden mediante la lógica transaccional existente. */
     @PostMapping("/checkout")
-    public ResponseEntity<OrderResponse> checkout(@Valid @RequestBody CheckoutCarritoRequest request) {
-        return ResponseEntity.ok(carritoService.checkout(request));
+    public ResponseEntity<ApiResponse<OrderResponse>> checkout(@Valid @RequestBody CheckoutCarritoRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Pedido creado correctamente", carritoService.checkout(request)));
     }
 }

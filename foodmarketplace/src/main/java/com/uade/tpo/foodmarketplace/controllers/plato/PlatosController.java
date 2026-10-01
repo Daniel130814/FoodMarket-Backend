@@ -55,42 +55,42 @@ public class PlatosController {
     }
 
     @PostMapping("createPlato")
-    public ResponseEntity<PlatoResponse> createPlato(@Valid @RequestBody PlatoRequest platoRequest) {
+    public ResponseEntity<ApiResponse<PlatoResponse>> createPlato(@Valid @RequestBody PlatoRequest platoRequest) {
         var result = platoService.createPlato(platoRequest);
 
         return ResponseEntity
                 .created(URI.create("/platos/" + result.getId()))
-                .body(ResponseMapper.plato(result));
+                .body(ApiResponse.ok("Plato creado correctamente", ResponseMapper.plato(result)));
     }
 
     /**
      * Actualiza los datos editables y las relaciones de receta de un plato existente.
      */
     @PutMapping("/{platoId}")
-    public ResponseEntity<PlatoResponse> updatePlato(@PathVariable("platoId") Long platoId,
+    public ResponseEntity<ApiResponse<PlatoResponse>> updatePlato(@PathVariable("platoId") Long platoId,
             @Valid @RequestBody PlatoRequest platoRequest) {
-        return ResponseEntity.ok(ResponseMapper.plato(platoService.updatePlato(platoId, platoRequest)));
+        return ResponseEntity.ok(ApiResponse.ok("Plato actualizado correctamente", ResponseMapper.plato(platoService.updatePlato(platoId, platoRequest))));
     }
 
     /**
      * Elimina un plato o lo pausa cuando los datos históricos aún lo referencian.
      */
     @DeleteMapping("/{platoId}")
-    public ResponseEntity<Void> deletePlato(@PathVariable("platoId") Long platoId) {
+    public ResponseEntity<ApiResponse<Void>> deletePlato(@PathVariable("platoId") Long platoId) {
         platoService.deletePlato(platoId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.ok("Plato eliminado o pausado correctamente", null));
     }
 
     /** Actualiza el descuento de un plato perteneciente al chef autenticado o a un administrador. */
     @PatchMapping("/{platoId}/descuento")
-    public ResponseEntity<PlatoResponse> actualizarDescuento(@PathVariable("platoId") Long platoId,
+    public ResponseEntity<ApiResponse<PlatoResponse>> actualizarDescuento(@PathVariable("platoId") Long platoId,
             @Valid @RequestBody DescuentoPlatoRequest request) {
-        return ResponseEntity.ok(ResponseMapper.plato(platoService.actualizarDescuento(platoId, request.porcentaje())));
+        return ResponseEntity.ok(ApiResponse.ok("Descuento actualizado correctamente", ResponseMapper.plato(platoService.actualizarDescuento(platoId, request.porcentaje()))));
     }
 
     /** Quita el descuento de un plato sin eliminar la publicación. */
     @DeleteMapping("/{platoId}/descuento")
-    public ResponseEntity<PlatoResponse> quitarDescuento(@PathVariable("platoId") Long platoId) {
-        return ResponseEntity.ok(ResponseMapper.plato(platoService.quitarDescuento(platoId)));
+    public ResponseEntity<ApiResponse<PlatoResponse>> quitarDescuento(@PathVariable("platoId") Long platoId) {
+        return ResponseEntity.ok(ApiResponse.ok("Descuento eliminado correctamente", ResponseMapper.plato(platoService.quitarDescuento(platoId))));
     }
 }

@@ -24,6 +24,11 @@ import com.uade.tpo.foodmarketplace.repository.category.CategoryRepository;
 import com.uade.tpo.foodmarketplace.repository.ingrediente.IngredienteRepository;
 import com.uade.tpo.foodmarketplace.service.category.CategoryService;
 import com.uade.tpo.foodmarketplace.service.ingrediente.IngredienteService;
+import com.uade.tpo.foodmarketplace.service.auth.AuthenticationService;
+import com.uade.tpo.foodmarketplace.entity.dto.auth.RegisterRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.auth.TipoRegistro;
+import com.uade.tpo.foodmarketplace.exceptions.user.UserDuplicateException;
+import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -33,6 +38,34 @@ class UniqueConstraintsMySqlTest extends MySqlIntegrationTestBase {
     @Autowired IngredienteService ingredientes;
     @Autowired CategoryRepository categoryRepository;
     @Autowired IngredienteRepository ingredienteRepository;
+    @Autowired AuthenticationService authenticationService;
+    @Autowired UserRepository userRepository;
+
+    @Test
+    void concurrentUserRegistrationKeepsOneEmail() throws Exception {
+        String email = unique() + "@test.invalid";
+        String first = unique();
+        String second = unique();
+        Result result = race(() -> authenticationService.register(register(first, email)),
+                () -> authenticationService.register(register(second, email.toUpperCase())));
+        assertEquals(1, result.successes(), result.toString());
+        assertEquals(1, result.failuresOf(UserDuplicateException.class), result.toString());
+        assertEquals(1, userRepository.findAll().stream()
+                .filter(u -> u.getEmail().equalsIgnoreCase(email)).count());
+    }
+
+    @Test
+    void concurrentUserRegistrationKeepsOneUsername() throws Exception {
+        String username = unique();
+        Result result = race(() -> authenticationService.register(register(username, unique() + "@test.invalid")),
+                () -> authenticationService.register(register(username.toUpperCase(), unique() + "@test.invalid")));
+        assertEquals(1, result.successes(), result.toString());
+        assertEquals(1, result.failuresOf(UserDuplicateException.class), result.toString());
+    }
+
+    private RegisterRequest register(String username, String email) {
+        return new RegisterRequest(username, "Nombre", "Apellido", email, "password1", TipoRegistro.CLIENTE);
+    }
 
     @Test
     void categoryCreateSequentialCaseInsensitiveAndUpdateConflict() {

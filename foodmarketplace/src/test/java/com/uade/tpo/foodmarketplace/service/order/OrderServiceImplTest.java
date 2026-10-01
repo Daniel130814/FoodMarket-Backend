@@ -80,6 +80,40 @@ class OrderServiceImplTest {
         assertEquals(EstadoPedido.CANCELADO, sub.getEstado());
     }
 
+    @Test
+    void cancelacionBloqueaPlatosPorIdAunqueDetallesLleguenInvertidos() {
+        User cliente = new User();
+        cliente.setId(1L);
+        Order order = order(cliente, EstadoPedido.PENDIENTE);
+        Plato primero = new Plato();
+        primero.setId(1L);
+        primero.setEstado(EstadoPlato.PUBLICADO);
+        primero.setStockDisponible(5);
+        Plato segundo = new Plato();
+        segundo.setId(2L);
+        segundo.setEstado(EstadoPlato.PUBLICADO);
+        segundo.setStockDisponible(5);
+        for (Plato plato : java.util.List.of(segundo, primero)) {
+            DetallePedido detalle = new DetallePedido();
+            detalle.setPlato(plato);
+            detalle.setCantidad(1);
+            order.getSubPedidos().getFirst().getDetalles().add(detalle);
+        }
+        when(orderRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(order));
+        when(authenticatedUserService.getCurrentUser()).thenReturn(cliente);
+        when(platoRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(primero));
+        when(platoRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(segundo));
+        when(orderRepository.save(order)).thenReturn(order);
+
+        orderService.cancelarOrder(10L);
+
+        org.mockito.InOrder locks = org.mockito.Mockito.inOrder(platoRepository);
+        locks.verify(platoRepository).findByIdForUpdate(1L);
+        locks.verify(platoRepository).findByIdForUpdate(2L);
+        assertEquals(6, primero.getStockDisponible());
+        assertEquals(6, segundo.getStockDisponible());
+    }
+
     private Order order(User cliente, EstadoPedido estado) {
         Order order = new Order();
         order.setId(10L);

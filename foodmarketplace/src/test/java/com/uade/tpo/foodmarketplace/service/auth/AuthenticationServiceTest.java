@@ -52,7 +52,7 @@ class AuthenticationServiceTest {
         RegisterRequest request = new RegisterRequest("  Ana.Perez  ", "Ana", "Perez", "ANA@MAIL.COM", "password1",
                 TipoRegistro.CLIENTE);
         when(passwordEncoder.encode("password1")).thenReturn("bcrypt");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
             user.setId(1L);
             return user;
@@ -63,7 +63,7 @@ class AuthenticationServiceTest {
 
         assertEquals(Role.CLIENTE, response.role());
         assertEquals("jwt", response.accessToken());
-        verify(userRepository).save(argThat(user ->
+        verify(userRepository).saveAndFlush(argThat(user ->
                 user.getUsername().equals("ana.perez")
                         && user.getEmail().equals("ana@mail.com")
                         && user.getPassword().equals("bcrypt")));
@@ -75,7 +75,7 @@ class AuthenticationServiceTest {
         RegisterRequest request = new RegisterRequest("chefleo", "Leo", "Chef", "chef@mail.com", "password1",
                 TipoRegistro.CHEF);
         when(passwordEncoder.encode(any())).thenReturn("bcrypt");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(jwtService.generateToken(any(User.class))).thenReturn("jwt");
 
         assertEquals(Role.CHEF, service.register(request).role());

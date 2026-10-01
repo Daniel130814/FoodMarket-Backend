@@ -22,6 +22,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.uade.tpo.foodmarketplace.entity.carrito.Carrito;
 import com.uade.tpo.foodmarketplace.entity.dto.carrito.AddItemCarritoRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.order.OrderItemRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.order.OrderRequest;
+import java.util.List;
 import com.uade.tpo.foodmarketplace.entity.domicilio.Domicilio;
 import com.uade.tpo.foodmarketplace.entity.order.DetallePedido;
 import com.uade.tpo.foodmarketplace.entity.order.EstadoPedido;
@@ -69,6 +72,41 @@ class RobustezConcurrencyMySqlTest extends MySqlIntegrationTestBase {
     @Autowired SubPedidoChefService subPedidoService;
     @Autowired CarritoService carritoService;
     @MockitoBean AuthenticatedUserService auth;
+
+    @Test
+    void dosCheckoutsConPlatosEnOrdenInversoNoGeneranDeadlock() throws Exception {
+        User cliente = user(Role.CLIENTE);
+        User chef = user(Role.CHEF);
+        when(auth.getCurrentUser()).thenReturn(cliente);
+        Plato primero = plato(chef, 10);
+        Plato segundo = plato(chef, 10);
+        Domicilio domicilio = new Domicilio();
+        domicilio.setUsuario(cliente);
+        domicilio.setCalle("Test");
+        domicilio.setNumero("1");
+        domicilio.setCiudad("Test");
+        domicilio.setProvincia("Test");
+        domicilio.setCodigoPostal("1000");
+        Long domicilioId = domicilios.saveAndFlush(domicilio).getId();
+
+        Race result = race(() -> orderService.createOrder(orderRequest(domicilioId, primero.getId(), segundo.getId())),
+                () -> orderService.createOrder(orderRequest(domicilioId, segundo.getId(), primero.getId())));
+
+        assertEquals(2, result.successes(), result.toString());
+        assertEquals(8, platos.findById(primero.getId()).orElseThrow().getStockDisponible());
+        assertEquals(8, platos.findById(segundo.getId()).orElseThrow().getStockDisponible());
+        assertEquals(2, orders.findByUserId(cliente.getId()).size());
+    }
+
+    private OrderRequest orderRequest(Long domicilioId, Long first, Long second) {
+        OrderItemRequest a = new OrderItemRequest();
+        a.setPlatoId(first);
+        a.setCantidad(1);
+        OrderItemRequest b = new OrderItemRequest();
+        b.setPlatoId(second);
+        b.setCantidad(1);
+        return new OrderRequest(domicilioId, List.of(a, b));
+    }
 
     @Test
     void dosAprobacionesSoloPersistenUna() throws Exception {

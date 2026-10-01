@@ -6,6 +6,8 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.entity.user.Role;
@@ -51,6 +53,7 @@ public class UserServiceImpl implements UserService {
      * Crea un usuario y devuelve su DTO público en lugar de la entidad persistida.
      */
     @Override
+    @Transactional
     public UserResponse createUser(String username, String nombre, String apellido, String email, String password, Role role)
             throws UserDuplicateException {
 
@@ -76,24 +79,26 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(password));
         user.setRole(role);
 
-        return ResponseMapper.user(userRepository.save(user));
+        return ResponseMapper.user(saveWithUniqueCheck(user));
     }
 
     /**
      * Actualiza nombre, apellido y email de un usuario sin permitir un cambio de rol.
      */
     @Override
+    @Transactional
     public UserResponse updateUser(Long userId, UserUpdateRequest request) {
         // Se carga la entidad gestionada para conservar su rol aunque un cliente envíe datos adicionales.
         User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
-        if (userRepository.existsByEmailIgnoreCaseAndIdNot(request.getEmail(), userId)) {
+        String email = request.getEmail().trim().toLowerCase(java.util.Locale.ROOT);
+        if (userRepository.existsByEmailIgnoreCaseAndIdNot(email, userId)) {
             throw new UserDuplicateException();
         }
 
         user.setNombre(request.getNombre());
         user.setApellido(request.getApellido());
-        user.setEmail(request.getEmail());
-        return ResponseMapper.user(userRepository.save(user));
+        user.setEmail(email);
+        return ResponseMapper.user(saveWithUniqueCheck(user));
     }
 
     @Override
@@ -104,5 +109,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse updateCurrentUser(UserUpdateRequest request) {
         return updateUser(authenticatedUserService.getCurrentUser().getId(), request);
+    }
+
+    private User saveWithUniqueCheck(User user) {
+        try {
+            return userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException exception) {
+            throw UserUniqueConstraint.translate(exception);
+        }
     }
 }

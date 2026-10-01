@@ -17,6 +17,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,6 +28,9 @@ import com.uade.tpo.foodmarketplace.entity.domicilio.Domicilio;
 import com.uade.tpo.foodmarketplace.entity.order.Order;
 
 @Entity
+@Table(name = "user", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_user_username", columnNames = "username"),
+        @UniqueConstraint(name = "uk_user_email", columnNames = "email") })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -41,10 +46,10 @@ public class User implements UserDetails {
     @Column
     private String apellido;
 
-    @Column(nullable = false, unique = true, length = 50, updatable = false)
+    @Column(nullable = false, length = 50, updatable = false)
     private String username;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
 
     @JsonIgnore

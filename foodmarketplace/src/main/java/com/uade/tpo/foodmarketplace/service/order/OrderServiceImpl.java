@@ -99,7 +99,8 @@ public class OrderServiceImpl implements OrderService {
             if (item.getCantidad() == null || item.getCantidad() <= 0) throw new CantidadInvalidaException();
             cantidades.merge(item.getPlatoId(), item.getCantidad(), Integer::sum);
         });
-        for (Map.Entry<Long, Integer> item : cantidades.entrySet()) {
+        for (Map.Entry<Long, Integer> item : cantidades.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey()).toList()) {
             Plato plato = platoRepository.findByIdForUpdate(item.getKey()).orElseThrow(PlatoNotFoundException::new);
             if (plato.getEstado() != EstadoPlato.PUBLICADO) {
                 throw new BusinessRuleException("El plato " + plato.getId() + " no esta publicado");
@@ -164,24 +165,17 @@ public class OrderServiceImpl implements OrderService {
             );
         }
 
-        order.getSubPedidos().forEach(sub -> {
-            sub.getDetalles().forEach(detalle -> {
-                Plato plato = platoRepository.findByIdForUpdate(detalle.getPlato().getId())
-                        .orElseThrow(PlatoNotFoundException::new);
-
-                plato.setStockDisponible(
-                        plato.getStockDisponible() + detalle.getCantidad()
-                );
-
-                if (plato.getEstado() == EstadoPlato.AGOTADO
-                        && plato.getStockDisponible() > 0) {
-                    plato.setEstado(EstadoPlato.PUBLICADO);
-                }
-                
-            });
-
-            sub.setEstado(EstadoPedido.CANCELADO);
+        Map<Long, Integer> cantidadesAReponer = new java.util.TreeMap<>();
+        order.getSubPedidos().forEach(sub -> sub.getDetalles().forEach(detalle ->
+                cantidadesAReponer.merge(detalle.getPlato().getId(), detalle.getCantidad(), Integer::sum)));
+        cantidadesAReponer.forEach((platoId, cantidad) -> {
+            Plato plato = platoRepository.findByIdForUpdate(platoId).orElseThrow(PlatoNotFoundException::new);
+            plato.setStockDisponible(plato.getStockDisponible() + cantidad);
+            if (plato.getEstado() == EstadoPlato.AGOTADO && plato.getStockDisponible() > 0) {
+                plato.setEstado(EstadoPlato.PUBLICADO);
+            }
         });
+        order.getSubPedidos().forEach(sub -> sub.setEstado(EstadoPedido.CANCELADO));
 
         order.setEstado(EstadoPedido.CANCELADO);
 

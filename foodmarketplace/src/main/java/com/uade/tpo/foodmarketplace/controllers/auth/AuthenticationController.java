@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.uade.tpo.foodmarketplace.entity.dto.auth.AuthenticationRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.auth.AuthenticationResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.auth.RegisterRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
 import com.uade.tpo.foodmarketplace.service.auth.AuthenticationService;
 
 import jakarta.validation.Valid;
@@ -25,12 +26,13 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AuthenticationResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authenticationService.register(request));
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok("Usuario registrado correctamente", authenticationService.register(request)));
     }
 
     @PostMapping("/authenticate")
-    public ResponseEntity<AuthenticationResponse> authenticate(@Valid @RequestBody AuthenticationRequest request) {
-        return ResponseEntity.ok(authenticationService.authenticate(request));
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> authenticate(@Valid @RequestBody AuthenticationRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Autenticación correcta", authenticationService.authenticate(request)));
     }
 }

@@ -5,6 +5,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.uade.tpo.foodmarketplace.entity.dto.auth.AuthenticationRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.auth.AuthenticationResponse;
@@ -16,6 +17,7 @@ import com.uade.tpo.foodmarketplace.exceptions.user.UserDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
 import com.uade.tpo.foodmarketplace.security.JwtService;
+import com.uade.tpo.foodmarketplace.service.user.UserUniqueConstraint;
 
 /** Gestiona registro y login; las contraseñas siempre se delegan a BCrypt. */
 @Service
@@ -56,7 +58,12 @@ public class AuthenticationService {
         // Nunca persistimos la contraseña recibida: BCrypt almacena un hash con salt.
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole(Role.valueOf(request.tipoCuenta().name()));
-        User saved = userRepository.save(user);
+        User saved;
+        try {
+            saved = userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException exception) {
+            throw UserUniqueConstraint.translate(exception);
+        }
         return response(saved);
     }
 
