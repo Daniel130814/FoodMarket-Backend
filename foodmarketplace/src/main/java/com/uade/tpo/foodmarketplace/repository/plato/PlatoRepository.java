@@ -17,6 +17,9 @@ public interface PlatoRepository extends JpaRepository<Plato, Long> {
 
     List<Plato> findByEstado(EstadoPlato estado);
 
+    /** Consulta actividad comprable sin cargar las publicaciones completas del chef. */
+    boolean existsByChefIdAndEstadoIn(Long chefId, List<EstadoPlato> estados);
+
     Optional<Plato> findByIdAndEstadoIn(Long id, List<EstadoPlato> estados);
 
     @Query("""

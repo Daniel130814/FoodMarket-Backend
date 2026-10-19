@@ -7,17 +7,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.entity.user.Role;
+import com.uade.tpo.foodmarketplace.entity.plato.EstadoPlato;
+import com.uade.tpo.foodmarketplace.entity.order.EstadoPedido;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ResponseMapper;
 import com.uade.tpo.foodmarketplace.entity.dto.user.UserResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.user.UserUpdateRequest;
 import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
+import com.uade.tpo.foodmarketplace.exceptions.common.ResourceInUseException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
+import com.uade.tpo.foodmarketplace.repository.plato.PlatoRepository;
+import com.uade.tpo.foodmarketplace.repository.order.SubPedidoChefRepository;
 import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 
 @Service
@@ -31,6 +37,12 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private AuthenticatedUserService authenticatedUserService;
+
+    @Autowired
+    private PlatoRepository platoRepository;
+
+    @Autowired
+    private SubPedidoChefRepository subPedidoChefRepository;
 
     /**
      * Obtiene todos los usuarios y convierte cada entidad en un DTO seguro de respuesta.
@@ -99,6 +111,38 @@ public class UserServiceImpl implements UserService {
         user.setApellido(request.getApellido());
         user.setEmail(email);
         return ResponseMapper.user(saveWithUniqueCheck(user));
+    }
+
+    /** Cambia solo el rol y conserva la contraseña y todas las relaciones del usuario. */
+    @Override
+    @Transactional
+    public UserResponse updateRole(Long userId, Role role) {
+        User currentUser = authenticatedUserService.getCurrentUser();
+        // También se valida en el servicio para proteger llamadas que no pasen por el controlador.
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new AccessDeniedException("Solo un administrador puede cambiar roles");
+        }
+
+        User user = userRepository.findByIdForUpdate(userId).orElseThrow(UserNotFoundException::new);
+        if (user.getRole() == role) {
+            return ResponseMapper.user(user);
+        }
+        if (currentUser.getId().equals(userId)) {
+            throw new BusinessRuleException("No podés quitarte a vos mismo el rol ADMIN");
+        }
+
+        if (user.getRole() == Role.CHEF
+                && (platoRepository.existsByChefIdAndEstadoIn(userId,
+                        List.of(EstadoPlato.PUBLICADO, EstadoPlato.AGOTADO))
+                    || subPedidoChefRepository.existsByChefIdAndEstadoIn(userId,
+                        List.of(EstadoPedido.PENDIENTE, EstadoPedido.CONFIRMADO,
+                                EstadoPedido.EN_PREPARACION, EstadoPedido.ENVIADO)))) {
+            throw new ResourceInUseException(
+                    "No se puede quitar el rol CHEF mientras tenga platos publicados o agotados, o subpedidos sin terminar");
+        }
+
+        user.setRole(role);
+        return ResponseMapper.user(userRepository.save(user));
     }
 
     @Override

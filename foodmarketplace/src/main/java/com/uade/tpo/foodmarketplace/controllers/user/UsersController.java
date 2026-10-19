@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,6 +18,7 @@ import jakarta.validation.Valid;
 import com.uade.tpo.foodmarketplace.entity.dto.user.UserRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.user.UserResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.user.UserUpdateRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.user.UserRoleUpdateRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserDuplicateException;
 import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
@@ -75,6 +77,14 @@ public class UsersController {
             @Valid @RequestBody UserUpdateRequest userRequest) {
         return ResponseEntity.ok(ApiResponse.ok("Usuario actualizado correctamente",
                 userService.updateUser(userId, userRequest)));
+    }
+
+    /** Cambia únicamente el rol; SecurityConfig restringe esta ruta a ADMIN. */
+    @PatchMapping("/{userId}/role")
+    public ResponseEntity<ApiResponse<UserResponse>> updateRole(@PathVariable("userId") Long userId,
+            @Valid @RequestBody UserRoleUpdateRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Rol del usuario actualizado correctamente",
+                userService.updateRole(userId, request.getRole())));
     }
 
     @GetMapping("/me")

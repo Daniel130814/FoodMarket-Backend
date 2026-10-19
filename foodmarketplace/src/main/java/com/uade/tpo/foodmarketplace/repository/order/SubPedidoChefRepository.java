@@ -10,8 +10,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.uade.tpo.foodmarketplace.entity.order.SubPedidoChef;
+import com.uade.tpo.foodmarketplace.entity.order.EstadoPedido;
 
 public interface SubPedidoChefRepository extends JpaRepository<SubPedidoChef, Long> {
+
+    /** Indica si el chef conserva trabajo pendiente antes de quitarle su rol. */
+    boolean existsByChefIdAndEstadoIn(Long chefId, List<EstadoPedido> estados);
 
     /**
      * Obtiene los subpedidos independientes generados para una orden.

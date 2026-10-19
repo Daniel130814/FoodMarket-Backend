@@ -29,6 +29,9 @@ public interface UserService {
      */
     UserResponse updateUser(Long userId, UserUpdateRequest request);
 
+    /** Asigna un único rol, con validaciones de administración y actividad del chef. */
+    UserResponse updateRole(Long userId, Role role);
+
     UserResponse getCurrentUser();
 
     UserResponse updateCurrentUser(UserUpdateRequest request);
