@@ -64,9 +64,11 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/platos/mis-platos").hasAuthority("CHEF")
+                        .requestMatchers(HttpMethod.GET, "/imagenes/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/platos/**", "/chef-profiles/**", "/resenas/**",
                                 "/categories/**", "/ingredientes/**").permitAll()
-                        .requestMatchers("/users/me").authenticated()
+                        .requestMatchers("/users/me", "/users/me/password").authenticated()
                         .requestMatchers("/users/**").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/platos/**").hasAuthority("CHEF")
                         .requestMatchers(HttpMethod.PUT, "/platos/**").hasAnyAuthority("CHEF", "ADMIN")

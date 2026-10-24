@@ -155,6 +155,17 @@ public class UserServiceImpl implements UserService {
         return updateUser(authenticatedUserService.getCurrentUser().getId(), request);
     }
 
+    @Override
+    @Transactional
+    public void changePassword(String actual, String nueva) {
+        User user = authenticatedUserService.getCurrentUser();
+        if (!passwordEncoder.matches(actual, user.getPassword())) {
+            throw new BusinessRuleException("La contraseña actual es incorrecta");
+        }
+        user.setPassword(passwordEncoder.encode(nueva));
+        userRepository.save(user);
+    }
+
     private User saveWithUniqueCheck(User user) {
         try {
             return userRepository.saveAndFlush(user);

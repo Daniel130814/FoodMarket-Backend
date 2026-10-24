@@ -1,5 +1,7 @@
 package com.uade.tpo.foodmarketplace.security;
 
+import java.util.Optional;
+
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,6 +29,16 @@ public class AuthenticatedUserService {
         }
         return userRepository.findByUsernameIgnoreCase(authentication.getName())
                 .orElseThrow(() -> new AccessDeniedException("El usuario autenticado ya no existe"));
+    }
+
+    /** Usuario autenticado si el request trae un token válido; vacío en rutas públicas sin token. */
+    public Optional<User> findCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getPrincipal())) {
+            return Optional.empty();
+        }
+        return userRepository.findByUsernameIgnoreCase(authentication.getName());
     }
 
     public boolean isAdmin(User user) {

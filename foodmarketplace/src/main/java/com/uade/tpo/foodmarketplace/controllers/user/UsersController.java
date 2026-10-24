@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
+import com.uade.tpo.foodmarketplace.entity.dto.user.CambioPasswordRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.user.UserRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.user.UserResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.user.UserUpdateRequest;
@@ -91,6 +92,12 @@ public class UsersController {
     public ResponseEntity<ApiResponse<UserResponse>> me() {
         return ResponseEntity.ok(ApiResponse.ok("Usuario autenticado obtenido correctamente",
                 userService.getCurrentUser()));
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody CambioPasswordRequest request) {
+        userService.changePassword(request.actual(), request.nueva());
+        return ResponseEntity.ok(ApiResponse.ok("Contraseña actualizada correctamente", null));
     }
 
     @PutMapping("/me")

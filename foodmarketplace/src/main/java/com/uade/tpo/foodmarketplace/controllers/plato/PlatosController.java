@@ -6,7 +6,10 @@ import java.util.List;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,6 +52,15 @@ public class PlatosController {
         return ResponseEntity.ok(ApiResponse.ok(message, platos.isEmpty() ? null : platos));
     }
 
+    /** Platos del chef autenticado en todos los estados; la ruta literal gana sobre /{platoId} y tiene regla propia en SecurityConfig. */
+    @GetMapping("/mis-platos")
+    public ResponseEntity<ApiResponse<List<PlatoResponse>>> getMisPlatos() {
+        List<PlatoResponse> platos = platoService.getMisPlatos().stream().map(ResponseMapper::plato).toList();
+        return ResponseEntity.ok(ApiResponse.ok(
+                platos.isEmpty() ? "No tenés platos cargados" : "Platos obtenidos correctamente",
+                platos.isEmpty() ? null : platos));
+    }
+
     @GetMapping("/{platoId}")
     public ResponseEntity<ApiResponse<PlatoResponse>> getPlatoById(@PathVariable("platoId") Long platoId) {
         return ResponseEntity.ok(ApiResponse.ok("Plato obtenido correctamente",platoService.getPlatoById(platoId).map(ResponseMapper::plato).orElseThrow(PlatoNotFoundException::new)));
@@ -77,8 +89,19 @@ public class PlatosController {
      */
     @DeleteMapping("/{platoId}")
     public ResponseEntity<ApiResponse<Void>> deletePlato(@PathVariable("platoId") Long platoId) {
-        platoService.deletePlato(platoId);
-        return ResponseEntity.ok(ApiResponse.ok("Plato eliminado o pausado correctamente", null));
+        boolean eliminado = platoService.deletePlato(platoId);
+        return ResponseEntity.ok(ApiResponse.ok(
+                eliminado ? "Plato eliminado" : "Plato pausado porque tiene historial", null));
+    }
+
+    /** Sube una imagen (multipart, campo "file") y la agrega a imagenesUrls del plato. */
+    @PostMapping(path = "/{platoId}/imagenes", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<PlatoResponse>> subirImagen(@PathVariable("platoId") Long platoId,
+            @RequestPart("file") MultipartFile file) {
+        return ResponseEntity
+                .created(URI.create("/platos/" + platoId))
+                .body(ApiResponse.ok("Imagen subida correctamente",
+                        ResponseMapper.plato(platoService.agregarImagen(platoId, file))));
     }
 
     /** Actualiza el descuento de un plato perteneciente al chef autenticado o a un administrador. */

@@ -11,6 +11,7 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.uade.tpo.foodmarketplace.entity.category.Category;
 import com.uade.tpo.foodmarketplace.entity.plato.EstadoPlato;
@@ -32,6 +33,7 @@ import com.uade.tpo.foodmarketplace.repository.order.DetallePedidoRepository;
 import com.uade.tpo.foodmarketplace.repository.plato.PlatoRepository;
 import com.uade.tpo.foodmarketplace.repository.resena.ResenaRepository;
 import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
+import com.uade.tpo.foodmarketplace.service.imagen.ImagenStorageService;
 
 @Service
 public class PlatoServiceImpl implements PlatoService {
@@ -59,6 +61,9 @@ public class PlatoServiceImpl implements PlatoService {
     @Autowired
     private ItemCarritoRepository itemCarritoRepository;
 
+    @Autowired
+    private ImagenStorageService imagenStorageService;
+
     @Override
     public List<Plato> getPlatos(String nombre, Long categoriaId, BigDecimal precioMin, BigDecimal precioMax) {
         validarFiltros(categoriaId, precioMin, precioMax);
@@ -69,7 +74,43 @@ public class PlatoServiceImpl implements PlatoService {
 
     @Override
     public Optional<Plato> getPlatoById(Long platoId) {
-        return platoRepository.findByIdAndEstadoIn(platoId, ESTADOS_PUBLICOS);
+        Optional<Plato> publico = platoRepository.findByIdAndEstadoIn(platoId, ESTADOS_PUBLICOS);
+        if (publico.isPresent()) {
+            return publico;
+        }
+        // BORRADOR/PAUSADO: solo visibles para el chef dueño o un ADMIN; el resto sigue viendo 404.
+        return platoRepository.findById(platoId)
+                .filter(plato -> authenticatedUserService.findCurrentUser()
+                        .map(user -> authenticatedUserService.isAdmin(user)
+                                || user.getId().equals(plato.getChef().getId()))
+                        .orElse(false));
+    }
+
+    @Override
+    public List<Plato> getMisPlatos() {
+        User chef = authenticatedUserService.getCurrentUser();
+        if (chef.getRole() != Role.CHEF) {
+            throw new AccessDeniedException("Solo un CHEF puede consultar sus platos");
+        }
+        return platoRepository.findByChefIdOrderByIdDesc(chef.getId());
+    }
+
+    @Override
+    @Transactional
+    public Plato agregarImagen(Long platoId, MultipartFile file) {
+        Plato plato = platoRepository.findById(platoId).orElseThrow(PlatoNotFoundException::new);
+        User currentUser = authenticatedUserService.getCurrentUser();
+        if (!currentUser.getId().equals(plato.getChef().getId())) {
+            throw new AccessDeniedException("Solo el chef dueño del plato puede subir imágenes");
+        }
+        String url = imagenStorageService.guardar(file);
+        try {
+            plato.getImagenesUrls().add(url);
+            return platoRepository.save(plato);
+        } catch (RuntimeException e) {
+            imagenStorageService.eliminarSilencioso(url);
+            throw e;
+        }
     }
 
     @Override
@@ -107,7 +148,7 @@ public class PlatoServiceImpl implements PlatoService {
      */
     @Override
     @Transactional
-    public void deletePlato(Long platoId) {
+    public boolean deletePlato(Long platoId) {
         Plato plato = platoRepository.findById(platoId).orElseThrow(PlatoNotFoundException::new);
         User currentUser = authenticatedUserService.getCurrentUser();
         authenticatedUserService.requireOwnerOrAdmin(currentUser, plato.getChef().getId());
@@ -119,10 +160,11 @@ public class PlatoServiceImpl implements PlatoService {
             // silenciosamente.
             plato.setEstado(EstadoPlato.PAUSADO);
             platoRepository.save(plato);
-            return;
+            return false;
         }
 
         platoRepository.delete(plato);
+        return true;
     }
 
     /**

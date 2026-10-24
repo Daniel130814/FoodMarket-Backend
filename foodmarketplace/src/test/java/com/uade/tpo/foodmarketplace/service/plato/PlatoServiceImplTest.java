@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -121,6 +122,31 @@ class PlatoServiceImplTest {
         assertFalse(platoService.getPlatoById(PLATO_ID).isPresent());
 
         verify(platoRepository).findByIdAndEstadoIn(PLATO_ID, ESTADOS_PUBLICOS);
+    }
+
+    @Test
+    void getPlatoById_borradorVisibleParaDuenioYAdminPeroNoParaOtros() {
+        Plato borrador = new Plato();
+        borrador.setEstado(EstadoPlato.BORRADOR);
+        borrador.setChef(chef());
+        User admin = new User();
+        admin.setId(999L);
+        admin.setRole(Role.ADMIN);
+        User otroChef = new User();
+        otroChef.setId(CHEF_ID + 1);
+        otroChef.setRole(Role.CHEF);
+        when(platoRepository.findByIdAndEstadoIn(PLATO_ID, ESTADOS_PUBLICOS)).thenReturn(Optional.empty());
+        when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.of(borrador));
+        when(authenticatedUserService.isAdmin(any())).thenAnswer(i -> ((User) i.getArgument(0)).getRole() == Role.ADMIN);
+
+        when(authenticatedUserService.findCurrentUser()).thenReturn(Optional.of(chef()));
+        assertSame(borrador, platoService.getPlatoById(PLATO_ID).orElseThrow());
+        when(authenticatedUserService.findCurrentUser()).thenReturn(Optional.of(admin));
+        assertSame(borrador, platoService.getPlatoById(PLATO_ID).orElseThrow());
+        when(authenticatedUserService.findCurrentUser()).thenReturn(Optional.of(otroChef));
+        assertFalse(platoService.getPlatoById(PLATO_ID).isPresent());
+        when(authenticatedUserService.findCurrentUser()).thenReturn(Optional.empty());
+        assertFalse(platoService.getPlatoById(PLATO_ID).isPresent());
     }
 
     @Test
@@ -322,7 +348,8 @@ class PlatoServiceImplTest {
         when(resenaRepository.existsByPlatoId(PLATO_ID)).thenReturn(false);
         when(itemCarritoRepository.existsByPlatoId(PLATO_ID)).thenReturn(false);
 
-        platoService.deletePlato(PLATO_ID);
+        boolean eliminado = platoService.deletePlato(PLATO_ID);
+        assertTrue(eliminado);
 
         verify(platoRepository).delete(plato);
     }
@@ -338,7 +365,8 @@ class PlatoServiceImplTest {
         when(itemCarritoRepository.existsByPlatoId(PLATO_ID)).thenReturn(true);
         when(platoRepository.save(plato)).thenReturn(plato);
 
-        platoService.deletePlato(PLATO_ID);
+        boolean eliminado = platoService.deletePlato(PLATO_ID);
+        assertFalse(eliminado);
 
         assertEquals(EstadoPlato.PAUSADO, plato.getEstado());
         verify(platoRepository, never()).delete(plato);
@@ -355,7 +383,8 @@ class PlatoServiceImplTest {
         when(itemCarritoRepository.existsByPlatoId(PLATO_ID)).thenReturn(false);
         when(platoRepository.save(plato)).thenReturn(plato);
 
-        platoService.deletePlato(PLATO_ID);
+        boolean eliminado = platoService.deletePlato(PLATO_ID);
+        assertFalse(eliminado);
 
         assertEquals(EstadoPlato.PAUSADO, plato.getEstado());
         verify(platoRepository, never()).delete(plato);

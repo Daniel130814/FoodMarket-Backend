@@ -22,6 +22,8 @@ public interface PlatoRepository extends JpaRepository<Plato, Long> {
 
     Optional<Plato> findByIdAndEstadoIn(Long id, List<EstadoPlato> estados);
 
+    List<Plato> findByChefIdOrderByIdDesc(Long chefId);
+
     @Query("""
             select distinct p
             from Plato p

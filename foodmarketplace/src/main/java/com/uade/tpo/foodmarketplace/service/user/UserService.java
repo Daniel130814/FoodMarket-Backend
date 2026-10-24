@@ -35,4 +35,7 @@ public interface UserService {
     UserResponse getCurrentUser();
 
     UserResponse updateCurrentUser(UserUpdateRequest request);
+
+    /** Cambia la contraseña del usuario autenticado tras verificar la actual. */
+    void changePassword(String actual, String nueva);
 }

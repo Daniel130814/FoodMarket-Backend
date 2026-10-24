@@ -11,6 +11,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import com.uade.tpo.foodmarketplace.exceptions.plato.ImagenNotFoundException;
 
 import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.exceptions.common.ResourceInUseException;
@@ -60,7 +64,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({ UserNotFoundException.class, PlatoNotFoundException.class, PedidoNotFoundException.class,
             PagoNotFoundException.class, DomicilioNotFoundException.class, IngredienteNotFoundException.class,
             CategoryNotFoundException.class, ResenaNotFoundException.class, ChefProfileNotFoundException.class,
-            SubPedidoNotFoundException.class, ItemCarritoNotFoundException.class })
+            SubPedidoNotFoundException.class, ItemCarritoNotFoundException.class,
+            ImagenNotFoundException.class })
     ResponseEntity<ApiResponse<Void>> notFound(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
@@ -86,6 +91,17 @@ public class GlobalExceptionHandler {
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
         return error(HttpStatus.BAD_REQUEST, message, request);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ResponseEntity<ApiResponse<Void>> uploadTooLarge(MaxUploadSizeExceededException ex, WebRequest request) {
+        return error(HttpStatus.BAD_REQUEST, "La imagen supera el tamaño máximo de 5 MB", request);
+    }
+
+    @ExceptionHandler({ MissingServletRequestPartException.class, MultipartException.class })
+    ResponseEntity<ApiResponse<Void>> invalidMultipart(Exception ex, WebRequest request) {
+        return error(HttpStatus.BAD_REQUEST,
+                "La solicitud debe ser multipart/form-data e incluir el archivo en el campo 'file'", request);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
