@@ -6,6 +6,7 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.uade.tpo.foodmarketplace.entity.dto.chefprofile.ChefProfileRequest;
@@ -73,6 +76,15 @@ public class ChefProfilesController {
             @Valid @RequestBody ChefProfileUpdateRequest request) {
         var profile = chefProfileService.updateChefProfile(id, request);
         return ResponseEntity.ok(ApiResponse.ok("Perfil de chef actualizado correctamente",
+                ResponseMapper.chefProfile(profile, chefProfileService.getReputacion(profile.getUser().getId()))));
+    }
+
+    /** Sube una imagen (multipart, campo "file") y la guarda como foto del perfil. */
+    @PutMapping(path = "/{id}/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<ChefProfileResponse>> subirFoto(@PathVariable Long id,
+            @RequestPart("file") MultipartFile file) {
+        var profile = chefProfileService.actualizarFoto(id, file);
+        return ResponseEntity.ok(ApiResponse.ok("Foto de perfil actualizada correctamente",
                 ResponseMapper.chefProfile(profile, chefProfileService.getReputacion(profile.getUser().getId()))));
     }
 }

@@ -15,5 +15,9 @@ public interface ChefProfileService {
      * Actualiza los datos de presentación de un perfil de chef existente.
      */
     ChefProfile updateChefProfile(Long id, ChefProfileUpdateRequest request);
+    /**
+     * Guarda la imagen subida como foto del perfil y reemplaza la anterior.
+     */
+    ChefProfile actualizarFoto(Long id, org.springframework.web.multipart.MultipartFile file);
     BigDecimal getReputacion(Long chefId);
 }

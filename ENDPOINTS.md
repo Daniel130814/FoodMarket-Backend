@@ -63,6 +63,13 @@ Platos del chef autenticado en **todos** los estados (BORRADOR, PUBLICADO, AGOTA
 - El camino anterior sigue vigente: `imagenesUrls: string[]` en `POST /platos/createPlato` y `PUT /platos/{id}`. Ojo: el `PUT` **reemplaza** la lista completa; si el front edita un plato con imágenes subidas por archivo, debe reenviar esas URLs o se pierden.
 - Un plato BORRADOR no exige imágenes; PUBLICADO/AGOTADO exige al menos una (regla existente).
 
+## NUEVO — `PUT /chef-profiles/{id}/foto` (CHEF dueño o ADMIN)
+
+- `Content-Type: multipart/form-data`, campo **`file`**. Mismos formatos y límite que las imágenes de platos (jpeg/png/webp, 5 MB).
+- Éxito: `200`, `message: "Foto de perfil actualizada correctamente"`, `data: ChefProfileResponse` con `fotoUrl` apuntando a la URL **absoluta** de la imagen subida. La foto anterior subida por archivo se borra del disco.
+- Errores: `400` archivo inválido (mismos mensajes que arriba) · `401` sin token · `403` si no es el dueño del perfil ni ADMIN · `404` si el perfil no existe.
+- `fotoUrl` como texto sigue disponible en `POST /chef-profiles` y `PUT /chef-profiles/{id}`.
+
 ## NUEVO — `GET /imagenes/{nombre}` (público)
 
 Sirve el archivo con su `Content-Type` real (`image/jpeg|png|webp`), `Cache-Control` de 30 días. `404` JSON (`"La imagen indicada no existe"`) si no existe o el nombre no es válido. Se usa directo en `<img src>`.

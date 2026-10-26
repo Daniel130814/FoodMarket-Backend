@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.uade.tpo.foodmarketplace.entity.chefprofile.ChefProfile;
 import com.uade.tpo.foodmarketplace.entity.user.Role;
@@ -19,6 +21,7 @@ import com.uade.tpo.foodmarketplace.repository.chefprofile.ChefProfileRepository
 import com.uade.tpo.foodmarketplace.repository.resena.ResenaRepository;
 import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
 import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
+import com.uade.tpo.foodmarketplace.service.imagen.ImagenStorageService;
 
 @Service
 public class ChefProfileServiceImpl implements ChefProfileService {
@@ -27,13 +30,16 @@ public class ChefProfileServiceImpl implements ChefProfileService {
     private final UserRepository userRepository;
     private final ResenaRepository resenaRepository;
     private final AuthenticatedUserService authenticatedUserService;
+    private final ImagenStorageService imagenStorageService;
 
     public ChefProfileServiceImpl(ChefProfileRepository chefProfileRepository, UserRepository userRepository,
-            ResenaRepository resenaRepository, AuthenticatedUserService authenticatedUserService) {
+            ResenaRepository resenaRepository, AuthenticatedUserService authenticatedUserService,
+            ImagenStorageService imagenStorageService) {
         this.chefProfileRepository = chefProfileRepository;
         this.userRepository = userRepository;
         this.resenaRepository = resenaRepository;
         this.authenticatedUserService = authenticatedUserService;
+        this.imagenStorageService = imagenStorageService;
     }
 
     @Override
@@ -88,6 +94,26 @@ public class ChefProfileServiceImpl implements ChefProfileService {
         profile.setFotoUrl(request.getFotoUrl());
         profile.setDescripcion(request.getDescripcion());
         return chefProfileRepository.save(profile);
+    }
+
+    @Override
+    @Transactional
+    public ChefProfile actualizarFoto(Long id, MultipartFile file) {
+        ChefProfile profile = chefProfileRepository.findById(id)
+                .orElseThrow(ChefProfileNotFoundException::new);
+        authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(),
+                profile.getUser().getId());
+        String anterior = profile.getFotoUrl();
+        String url = imagenStorageService.guardar(file);
+        try {
+            profile.setFotoUrl(url);
+            ChefProfile guardado = chefProfileRepository.save(profile);
+            imagenStorageService.eliminarSilencioso(anterior);
+            return guardado;
+        } catch (RuntimeException e) {
+            imagenStorageService.eliminarSilencioso(url);
+            throw e;
+        }
     }
 
     @Override
