@@ -32,7 +32,8 @@ public class IngredienteServiceImpl implements IngredienteService {
 
     @Override
     public Ingrediente createIngrediente(String nombre, String descripcion) {
-        if (ingredienteRepository.existsByNombreIgnoreCase(nombre)) {
+        if (ingredienteRepository.existsByNombreIgnoreCase(nombre)
+                || ingredienteRepository.findByNombreNormalizado(Ingrediente.normalizar(nombre)).isPresent()) {
             throw new IngredienteDuplicateException();
         }
 
@@ -51,7 +52,9 @@ public class IngredienteServiceImpl implements IngredienteService {
         // Cargar el ingrediente garantiza que la actualización conserve el identificador original.
         Ingrediente ingrediente = ingredienteRepository.findById(ingredienteId)
                 .orElseThrow(IngredienteNotFoundException::new);
-        if (ingredienteRepository.existsByNombreIgnoreCaseAndIdNot(nombre, ingredienteId)) {
+        if (ingredienteRepository.existsByNombreIgnoreCaseAndIdNot(nombre, ingredienteId)
+                || ingredienteRepository.findByNombreNormalizado(Ingrediente.normalizar(nombre))
+                        .filter(otro -> !otro.getId().equals(ingredienteId)).isPresent()) {
             throw new IngredienteDuplicateException();
         }
 
@@ -64,7 +67,8 @@ public class IngredienteServiceImpl implements IngredienteService {
         try {
             return ingredienteRepository.saveAndFlush(ingrediente);
         } catch (DataIntegrityViolationException exception) {
-            if (KnownUniqueConstraint.matches(exception, "uk_ingrediente_nombre")) {
+            if (KnownUniqueConstraint.matches(exception, "uk_ingrediente_nombre")
+                    || KnownUniqueConstraint.matches(exception, "uk_ingrediente_nombre_normalizado")) {
                 throw new IngredienteDuplicateException();
             }
             throw exception;

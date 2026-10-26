@@ -31,6 +31,8 @@ Base URL: `http://localhost:4002`. Autenticación: `Authorization: Bearer <acces
 | `/subpedidos/**` | CHEF o ADMIN |
 | `/carrito/**` | CLIENTE |
 
+`POST /ingredientes` sigue siendo ADMIN; el CHEF crea ingredientes nuevos indicando `nombre` al armar el plato (ver abajo).
+
 Los endpoints no listados acá (auth, carrito, órdenes, pagos, reseñas, categorías, ingredientes, domicilios, chef-profiles, subpedidos) **no cambiaron**.
 
 ---
@@ -85,6 +87,24 @@ Body:
 - `"Plato pausado porque tiene historial"` → quedó en `PAUSADO` (tiene pedidos, reseñas o está en un carrito).
 
 ---
+
+## CAMBIO — `ingredientes` de `POST /platos/createPlato` y `PUT /platos/{id}` (CHEF dueño)
+
+Cada elemento de `ingredientes` acepta **exactamente una** de estas formas:
+
+```json
+{ "ingredienteId": 4, "cantidad": 120, "unidadMedida": "GRAMOS" }
+{ "nombre": "Pimentón ahumado", "cantidad": 5, "unidadMedida": "GRAMOS" }
+```
+
+- `ingredienteId` y `nombre` a la vez, o ninguno de los dos → `400` ("Cada ingrediente debe indicar exactamente uno de: ingredienteId o nombre").
+- Con `nombre`: se reutiliza el ingrediente existente o se crea uno nuevo. La búsqueda ignora mayúsculas, tildes y espacios sobrantes (`"tomate"`, `" Tomate "` y `"TOMATE"` son el mismo). Al crear se guarda el nombre tal cual lo mandó el chef (con trim) y `descripcion` queda igual al nombre.
+- `nombre` vacío/en blanco o de más de 255 caracteres → `400`.
+- Un mismo ingrediente repetido en el plato → `400`, incluso si una entrada usa `ingredienteId` y otra `nombre` (se verifica después de resolver los nombres).
+- Los ingredientes nuevos se crean en la misma transacción que el plato: si el plato falla (validación, 403, etc.) no queda ninguno creado. Dos chefs creando el mismo nombre a la vez terminan usando el mismo ingrediente.
+- `cantidad` > 0 y `unidadMedida` del enum actual, sin cambios. Quitar un ingrediente sigue siendo un `PUT` con la lista completa.
+- La respuesta (`PlatoResponse.ingredientes`: `ingredienteId`, `nombre`, `cantidad`, `unidadMedida`) no cambia; los clientes que mandan solo `ingredienteId` siguen funcionando igual.
+- Seguridad sin cambios: `POST/PUT/DELETE /ingredientes/**` siguen siendo ADMIN (el chef no renombra ni borra del catálogo); `DELETE /ingredientes/{id}` da `409` si lo usa algún plato; `GET /ingredientes` y `GET /ingredientes/{id}` son públicos (sirven para sugerir nombres).
 
 ## `PlatoResponse` (sin cambios)
 

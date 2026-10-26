@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import com.uade.tpo.foodmarketplace.entity.plato.Plato;
 import com.uade.tpo.foodmarketplace.entity.plato.PlatoIngrediente;
 import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.entity.user.Role;
+import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoIngredienteRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoRequest;
 import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import org.springframework.security.access.AccessDeniedException;
@@ -34,6 +36,7 @@ import com.uade.tpo.foodmarketplace.repository.plato.PlatoRepository;
 import com.uade.tpo.foodmarketplace.repository.resena.ResenaRepository;
 import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 import com.uade.tpo.foodmarketplace.service.imagen.ImagenStorageService;
+import com.uade.tpo.foodmarketplace.service.ingrediente.IngredienteResolver;
 
 @Service
 public class PlatoServiceImpl implements PlatoService {
@@ -51,6 +54,9 @@ public class PlatoServiceImpl implements PlatoService {
 
     @Autowired
     private IngredienteRepository ingredienteRepository;
+
+    @Autowired
+    private IngredienteResolver ingredienteResolver;
 
     @Autowired
     private DetallePedidoRepository detallePedidoRepository;
@@ -114,6 +120,7 @@ public class PlatoServiceImpl implements PlatoService {
     }
 
     @Override
+    @Transactional
     public Plato createPlato(PlatoRequest request) {
         User chef = authenticatedUserService.getCurrentUser();
         if (chef.getRole() != Role.CHEF) {
@@ -268,21 +275,30 @@ public class PlatoServiceImpl implements PlatoService {
             return;
         }
 
-        Set<Long> ingredientesRecibidos = new HashSet<>();
         Map<Long, PlatoIngrediente> relacionesExistentes = new HashMap<>();
         for (PlatoIngrediente relacion : plato.getIngredientes()) {
             relacionesExistentes.put(relacion.getIngrediente().getId(), relacion);
         }
 
-        request.getIngredientes().forEach(item -> ingredientesRecibidos.add(item.getIngredienteId()));
+        // Primero se resuelven todos los ingredientes (los nombres nuevos se crean en esta misma
+        // transaccion) y recien despues se verifican repetidos, porque id y nombre pueden apuntar
+        // al mismo ingrediente.
+        Map<Long, PlatoIngredienteRequest> pedidos = new LinkedHashMap<>();
+        Map<Long, Ingrediente> resueltos = new HashMap<>();
+        for (PlatoIngredienteRequest item : request.getIngredientes()) {
+            Ingrediente ingrediente = resolverIngrediente(item, relacionesExistentes);
+            if (pedidos.put(ingrediente.getId(), item) != null) {
+                throw new BusinessRuleException("Un ingrediente no puede repetirse en el mismo plato");
+            }
+            resueltos.put(ingrediente.getId(), ingrediente);
+        }
 
         // No borramos toda la colección: las relaciones que ya no llegan se eliminan
         // una a una por orphanRemoval.
-        plato.getIngredientes()
-                .removeIf(relacion -> !ingredientesRecibidos.contains(relacion.getIngrediente().getId()));
+        plato.getIngredientes().removeIf(relacion -> !pedidos.containsKey(relacion.getIngrediente().getId()));
 
-        request.getIngredientes().forEach(item -> {
-            PlatoIngrediente relacionExistente = relacionesExistentes.get(item.getIngredienteId());
+        pedidos.forEach((ingredienteId, item) -> {
+            PlatoIngrediente relacionExistente = relacionesExistentes.get(ingredienteId);
             if (relacionExistente != null) {
                 // Si la relación ya existe, reutilizamos la misma Entity y evitamos un INSERT
                 // duplicado.
@@ -291,17 +307,29 @@ public class PlatoServiceImpl implements PlatoService {
                 return;
             }
 
-            Ingrediente ingrediente = ingredienteRepository.findById(item.getIngredienteId())
-                    .orElseThrow(IngredienteNotFoundException::new);
             PlatoIngrediente nuevaRelacion = new PlatoIngrediente();
             nuevaRelacion.setPlato(plato);
-            nuevaRelacion.setIngrediente(ingrediente);
+            nuevaRelacion.setIngrediente(resueltos.get(ingredienteId));
             nuevaRelacion.setCantidad(item.getCantidad());
             nuevaRelacion.setUnidadMedida(item.getUnidadMedida());
             plato.getIngredientes().add(nuevaRelacion);
         });
     }
 
+    private Ingrediente resolverIngrediente(PlatoIngredienteRequest item,
+            Map<Long, PlatoIngrediente> relacionesExistentes) {
+        if (item.getIngredienteId() != null) {
+            PlatoIngrediente existente = relacionesExistentes.get(item.getIngredienteId());
+            if (existente != null) {
+                return existente.getIngrediente();
+            }
+            return ingredienteRepository.findById(item.getIngredienteId())
+                    .orElseThrow(IngredienteNotFoundException::new);
+        }
+        return ingredienteResolver.obtenerOCrearPorNombre(item.getNombre());
+    }
+
+    /** Rechazo barato de ids repetidos antes de tocar la base; el chequeo completo es posterior. */
     private void validarIngredientesSinDuplicados(PlatoRequest request) {
         if (request.getIngredientes() == null) {
             return;
@@ -309,7 +337,7 @@ public class PlatoServiceImpl implements PlatoService {
 
         Set<Long> ingredientesRecibidos = new HashSet<>();
         for (var item : request.getIngredientes()) {
-            if (!ingredientesRecibidos.add(item.getIngredienteId())) {
+            if (item.getIngredienteId() != null && !ingredientesRecibidos.add(item.getIngredienteId())) {
                 throw new BusinessRuleException("Un ingrediente no puede repetirse en el mismo plato");
             }
         }

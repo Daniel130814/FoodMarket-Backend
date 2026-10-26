@@ -66,6 +66,8 @@ class PlatoServiceImplTest {
     @Mock
     private IngredienteRepository ingredienteRepository;
     @Mock
+    private com.uade.tpo.foodmarketplace.service.ingrediente.IngredienteResolver ingredienteResolver;
+    @Mock
     private DetallePedidoRepository detallePedidoRepository;
     @Mock
     private ResenaRepository resenaRepository;
@@ -393,6 +395,68 @@ class PlatoServiceImplTest {
     private void prepararCreacionExitosa() {
         autenticarChef();
         when(platoRepository.save(any(Plato.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    @Test
+    void updatePlato_resuelveIngredienteNuevoPorNombre() {
+        Plato plato = platoCon(ingrediente("Pollo", POLLO_ID), new BigDecimal("250"));
+        prepararActualizacion(plato);
+        Ingrediente pimenton = ingrediente("Pimentón ahumado", 9L);
+        when(ingredienteResolver.obtenerOCrearPorNombre("Pimentón ahumado")).thenReturn(pimenton);
+
+        platoService.updatePlato(PLATO_ID, requestCon(ingredientePorNombre("Pimentón ahumado", "5")));
+
+        assertEquals(1, plato.getIngredientes().size());
+        assertSame(pimenton, plato.getIngredientes().getFirst().getIngrediente());
+        verify(ingredienteRepository, never()).findById(any());
+    }
+
+    @Test
+    void updatePlato_rechazaIdYNombreQueApuntanAlMismoIngrediente() {
+        Plato plato = platoCon(ingrediente("Pollo", POLLO_ID), new BigDecimal("250"));
+        when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.of(plato));
+        when(authenticatedUserService.getCurrentUser()).thenReturn(chef());
+        Ingrediente tomate = ingrediente("Tomate", TOMATE_ID);
+        when(ingredienteRepository.findById(TOMATE_ID)).thenReturn(Optional.of(tomate));
+        when(ingredienteResolver.obtenerOCrearPorNombre("tomate")).thenReturn(tomate);
+
+        assertThrows(BusinessRuleException.class, () -> platoService.updatePlato(PLATO_ID, requestCon(
+                ingredienteRequest(TOMATE_ID, "100"),
+                ingredientePorNombre("tomate", "50"))));
+    }
+
+    @Test
+    void normalizar_ignoraMayusculasTildesYEspacios() {
+        assertEquals("pimenton ahumado", Ingrediente.normalizar("  Pimentón   AHUMADO "));
+        assertEquals(Ingrediente.normalizar("tomate"), Ingrediente.normalizar(" TOMATE "));
+    }
+
+    @Test
+    void request_exigeExactamenteUnoDeIdONombre() {
+        try (var factory = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
+            var validator = factory.getValidator();
+            PlatoIngredienteRequest ninguno = ingredienteRequest(1L, "1");
+            ninguno.setIngredienteId(null);
+            PlatoIngredienteRequest ambos = ingredienteRequest(1L, "1");
+            ambos.setNombre("Tomate");
+            PlatoIngredienteRequest vacio = ingredientePorNombre("   ", "1");
+            PlatoIngredienteRequest largo = ingredientePorNombre("x".repeat(256), "1");
+
+            assertFalse(validator.validate(ninguno).isEmpty());
+            assertFalse(validator.validate(ambos).isEmpty());
+            assertFalse(validator.validate(vacio).isEmpty());
+            assertFalse(validator.validate(largo).isEmpty());
+            assertTrue(validator.validate(ingredienteRequest(1L, "1")).isEmpty());
+            assertTrue(validator.validate(ingredientePorNombre("Tomate", "1")).isEmpty());
+        }
+    }
+
+    private PlatoIngredienteRequest ingredientePorNombre(String nombre, String cantidad) {
+        PlatoIngredienteRequest request = new PlatoIngredienteRequest();
+        request.setNombre(nombre);
+        request.setCantidad(new BigDecimal(cantidad));
+        request.setUnidadMedida(UnidadMedida.GRAMOS);
+        return request;
     }
 
     private User autenticarChef() {
