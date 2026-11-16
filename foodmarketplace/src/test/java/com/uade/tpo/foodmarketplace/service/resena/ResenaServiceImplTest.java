@@ -17,6 +17,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import com.uade.tpo.foodmarketplace.entity.dto.resena.ResenaUpdateRequest;
+import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.entity.order.EstadoPedido;
 import com.uade.tpo.foodmarketplace.entity.plato.Plato;
 import com.uade.tpo.foodmarketplace.entity.resena.Resena;
@@ -44,8 +46,36 @@ class ResenaServiceImplTest {
     @Mock
     private AuthenticatedUserService authenticatedUserService;
 
+    @Mock
+    private FiltroLenguaOfensivo filtroLenguaOfensivo;
+
     @InjectMocks
     private ResenaServiceImpl resenaService;
+
+    @Test
+    void rechazaAlCrearUnComentarioConLenguajeOfensivoSinTocarLaBase() {
+        when(filtroLenguaOfensivo.contieneLenguajeOfensivo("texto feo")).thenReturn(true);
+
+        BusinessRuleException exception = assertThrows(BusinessRuleException.class,
+                () -> resenaService.createResena(5, "texto feo", PLATO_ID));
+
+        assertEquals("El comentario contiene lenguaje no permitido", exception.getMessage());
+        verify(resenaRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void rechazaAlEditarUnComentarioConLenguajeOfensivo() {
+        when(filtroLenguaOfensivo.contieneLenguajeOfensivo("texto feo")).thenReturn(true);
+        ResenaUpdateRequest request = new ResenaUpdateRequest();
+        request.setCalificacion(4);
+        request.setComentario("texto feo");
+
+        BusinessRuleException exception = assertThrows(BusinessRuleException.class,
+                () -> resenaService.updateResena(1L, request));
+
+        assertEquals("El comentario contiene lenguaje no permitido", exception.getMessage());
+        verify(resenaRepository, never()).save(any());
+    }
 
     @Test
     void creaResenaCuandoElClienteComproElPlatoEntregadoYNoTieneUnaPrevia() {

@@ -38,6 +38,9 @@ public class ResenaServiceImpl implements ResenaService {
     @Autowired
     private AuthenticatedUserService authenticatedUserService;
 
+    @Autowired
+    private FiltroLenguaOfensivo filtroLenguaOfensivo;
+
     @Override
     public List<Resena> getResenas() {
         return resenaRepository.findAll();
@@ -62,6 +65,7 @@ public class ResenaServiceImpl implements ResenaService {
         if (calificacion == null || calificacion < 1 || calificacion > 5) {
             throw new CalificacionInvalidaException();
         }
+        validarComentario(comentario);
 
         User cliente = authenticatedUserService.getCurrentUser();
         Long clienteId = cliente.getId();
@@ -105,6 +109,7 @@ public class ResenaServiceImpl implements ResenaService {
         if (request.getCalificacion() < 1 || request.getCalificacion() > 5) {
             throw new CalificacionInvalidaException();
         }
+        validarComentario(request.getComentario());
 
         // La reseña existente conserva su cliente, plato y fecha de creación originales.
         Resena resena = resenaRepository.findById(resenaId).orElseThrow(ResenaNotFoundException::new);
@@ -124,6 +129,13 @@ public class ResenaServiceImpl implements ResenaService {
         authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(),
                 resena.getCliente().getId());
         resenaRepository.delete(resena);
+    }
+
+    /** El comentario es opcional; si viene, no puede contener lenguaje ofensivo (no se informa la palabra). */
+    private void validarComentario(String comentario) {
+        if (filtroLenguaOfensivo.contieneLenguajeOfensivo(comentario)) {
+            throw new BusinessRuleException("El comentario contiene lenguaje no permitido");
+        }
     }
 
     private boolean esDuplicadoClientePlato(DataIntegrityViolationException exception) {
