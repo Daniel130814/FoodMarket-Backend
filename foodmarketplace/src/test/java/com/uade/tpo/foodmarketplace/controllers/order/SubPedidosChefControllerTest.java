@@ -50,6 +50,9 @@ class SubPedidosChefControllerTest {
         assertTrue(response.getBody().success());
         assertEquals("Estado del subpedido actualizado correctamente", response.getBody().message());
         assertEquals(5L, response.getBody().data().id());
+        assertEquals(40L, response.getBody().data().pedidoId());
+        assertEquals(java.time.LocalDateTime.of(2026, 11, 1, 12, 0), response.getBody().data().fechaCreacion());
+        assertEquals("Juan Pérez", response.getBody().data().clienteNombre());
     }
 
     @Test void subPedidoInexistenteLanzaNotFoundDelDominio() {
@@ -61,8 +64,17 @@ class SubPedidosChefControllerTest {
         User chef = new User();
         chef.setId(2L);
         chef.setNombre("Chef");
+        User cliente = new User();
+        cliente.setId(3L);
+        cliente.setNombre("Juan");
+        cliente.setApellido("Pérez");
+        com.uade.tpo.foodmarketplace.entity.order.Order pedido = new com.uade.tpo.foodmarketplace.entity.order.Order();
+        pedido.setId(40L);
+        pedido.setUser(cliente);
+        pedido.setFechaCreacion(java.time.LocalDateTime.of(2026, 11, 1, 12, 0));
         SubPedidoChef subPedido = new SubPedidoChef();
         subPedido.setId(5L);
+        subPedido.setPedido(pedido);
         subPedido.setChef(chef);
         subPedido.setEstado(EstadoPedido.CONFIRMADO);
         subPedido.setSubtotal(BigDecimal.TEN);

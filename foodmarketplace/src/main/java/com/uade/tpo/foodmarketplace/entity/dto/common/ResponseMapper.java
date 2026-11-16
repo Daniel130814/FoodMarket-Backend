@@ -42,7 +42,9 @@ public final class ResponseMapper {
     }
 
     public static SubPedidoChefResponse subPedido(SubPedidoChef subPedido) {
-        return new SubPedidoChefResponse(subPedido.getId(), subPedido.getChef().getId(), subPedido.getChef().getNombre(),
+        Order pedido = subPedido.getPedido();
+        return new SubPedidoChefResponse(subPedido.getId(), pedido.getId(), pedido.getFechaCreacion(),
+                nombreCompleto(pedido.getUser()), subPedido.getChef().getId(), subPedido.getChef().getNombre(),
                 subPedido.getEstado(),
                 subPedido.getSubtotal(), subPedido.getDetalles().stream().map(ResponseMapper::detalle).toList());
     }
