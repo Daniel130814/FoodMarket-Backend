@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import com.uade.tpo.foodmarketplace.entity.plato.EstadoPlato;
 import com.uade.tpo.foodmarketplace.entity.plato.Plato;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoRequest;
 
@@ -35,6 +36,12 @@ public interface PlatoService {
      * @return true si se borró físicamente, false si quedó en PAUSADO
      */
     boolean deletePlato(Long platoId);
+
+    /** Cambia solo el stock; aplica las mismas reglas de recálculo de estado que updatePlato. */
+    Plato actualizarStock(Long platoId, Integer stockDisponible);
+
+    /** Cambia solo el estado; aplica las mismas reglas de stock e imagen que updatePlato. */
+    Plato actualizarEstado(Long platoId, EstadoPlato estado);
 
     /** Actualiza el descuento vigente de un plato tras validar ownership. */
     Plato actualizarDescuento(Long platoId, java.math.BigDecimal porcentaje);

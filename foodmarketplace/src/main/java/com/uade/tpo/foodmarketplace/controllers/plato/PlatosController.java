@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.plato.DescuentoPlatoRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.plato.EstadoPlatoRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.plato.StockPlatoRequest;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ResponseMapper;
 import com.uade.tpo.foodmarketplace.service.plato.PlatoService;
@@ -103,6 +105,22 @@ public class PlatosController {
                 .created(URI.create("/platos/" + platoId))
                 .body(ApiResponse.ok("Imagen subida correctamente",
                         ResponseMapper.plato(platoService.agregarImagen(platoId, file))));
+    }
+
+    /** Cambia solo el stock del plato (chef dueño o ADMIN); recalcula AGOTADO/PUBLICADO como el PUT. */
+    @PatchMapping("/{platoId}/stock")
+    public ResponseEntity<ApiResponse<PlatoResponse>> actualizarStock(@PathVariable("platoId") Long platoId,
+            @Valid @RequestBody StockPlatoRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Stock actualizado correctamente",
+                ResponseMapper.plato(platoService.actualizarStock(platoId, request.stockDisponible()))));
+    }
+
+    /** Cambia solo el estado del plato (chef dueño o ADMIN) con las mismas reglas que el PUT. */
+    @PatchMapping("/{platoId}/estado")
+    public ResponseEntity<ApiResponse<PlatoResponse>> actualizarEstado(@PathVariable("platoId") Long platoId,
+            @Valid @RequestBody EstadoPlatoRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Estado actualizado correctamente",
+                ResponseMapper.plato(platoService.actualizarEstado(platoId, request.estado()))));
     }
 
     /** Actualiza el descuento de un plato perteneciente al chef autenticado o a un administrador. */

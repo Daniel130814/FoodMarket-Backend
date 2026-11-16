@@ -283,6 +283,106 @@ class PlatoServiceImplTest {
         verify(platoRepository, never()).save(any());
     }
 
+    private Plato platoConEstado(EstadoPlato estado, int stock, boolean conImagen) {
+        Plato plato = new Plato();
+        plato.setChef(chef());
+        plato.setEstado(estado);
+        plato.setStockDisponible(stock);
+        if (conImagen) {
+            plato.getImagenesUrls().add(IMAGEN_1);
+        }
+        when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.of(plato));
+        when(authenticatedUserService.getCurrentUser()).thenReturn(chef());
+        // lenient: los casos de rechazo nunca llegan a guardar.
+        org.mockito.Mockito.lenient().when(platoRepository.save(plato)).thenReturn(plato);
+        return plato;
+    }
+
+    @Test
+    void actualizarStock_cero_pasaPublicadoAAgotado() {
+        Plato plato = platoConEstado(EstadoPlato.PUBLICADO, 5, true);
+
+        Plato resultado = platoService.actualizarStock(PLATO_ID, 0);
+
+        assertEquals(0, resultado.getStockDisponible());
+        assertEquals(EstadoPlato.AGOTADO, resultado.getEstado());
+    }
+
+    @Test
+    void actualizarStock_mayorACero_pasaAgotadoAPublicado() {
+        platoConEstado(EstadoPlato.AGOTADO, 0, true);
+
+        assertEquals(EstadoPlato.PUBLICADO, platoService.actualizarStock(PLATO_ID, 20).getEstado());
+    }
+
+    @Test
+    void actualizarStock_respetaBorradorYPausado() {
+        platoConEstado(EstadoPlato.BORRADOR, 0, false);
+        assertEquals(EstadoPlato.BORRADOR, platoService.actualizarStock(PLATO_ID, 10).getEstado());
+    }
+
+    @Test
+    void actualizarStock_respetaPausadoConStockCero() {
+        platoConEstado(EstadoPlato.PAUSADO, 3, true);
+        assertEquals(EstadoPlato.PAUSADO, platoService.actualizarStock(PLATO_ID, 0).getEstado());
+    }
+
+    @Test
+    void actualizarStock_rechazaNegativo() {
+        assertThrows(BusinessRuleException.class, () -> platoService.actualizarStock(PLATO_ID, -1));
+        verify(platoRepository, never()).save(any());
+    }
+
+    @Test
+    void actualizarStock_inexistenteDaNotFound() {
+        when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.empty());
+        assertThrows(com.uade.tpo.foodmarketplace.exceptions.plato.PlatoNotFoundException.class,
+                () -> platoService.actualizarStock(PLATO_ID, 1));
+    }
+
+    @Test
+    void actualizarStock_chefAjenoRecibeAccessDenied() {
+        Plato plato = new Plato();
+        plato.setChef(chef());
+        User otro = new User();
+        otro.setId(999L);
+        when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.of(plato));
+        when(authenticatedUserService.getCurrentUser()).thenReturn(otro);
+        org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException("no"))
+                .when(authenticatedUserService).requireOwnerOrAdmin(otro, CHEF_ID);
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> platoService.actualizarStock(PLATO_ID, 1));
+        verify(platoRepository, never()).save(any());
+    }
+
+    @Test
+    void actualizarEstado_publicadoConStockCeroQuedaAgotado() {
+        platoConEstado(EstadoPlato.BORRADOR, 0, true);
+        assertEquals(EstadoPlato.AGOTADO, platoService.actualizarEstado(PLATO_ID, EstadoPlato.PUBLICADO).getEstado());
+    }
+
+    @Test
+    void actualizarEstado_publicadoConStockQuedaPublicado() {
+        platoConEstado(EstadoPlato.PAUSADO, 4, true);
+        assertEquals(EstadoPlato.PUBLICADO, platoService.actualizarEstado(PLATO_ID, EstadoPlato.AGOTADO).getEstado());
+    }
+
+    @Test
+    void actualizarEstado_publicarSinImagenesSeRechaza() {
+        platoConEstado(EstadoPlato.BORRADOR, 4, false);
+        assertThrows(BusinessRuleException.class,
+                () -> platoService.actualizarEstado(PLATO_ID, EstadoPlato.PUBLICADO));
+        verify(platoRepository, never()).save(any());
+    }
+
+    @Test
+    void actualizarEstado_pausadoYBorradorSeAplicanTalCual() {
+        platoConEstado(EstadoPlato.PUBLICADO, 4, false);
+        assertEquals(EstadoPlato.PAUSADO, platoService.actualizarEstado(PLATO_ID, EstadoPlato.PAUSADO).getEstado());
+        assertEquals(EstadoPlato.BORRADOR, platoService.actualizarEstado(PLATO_ID, EstadoPlato.BORRADOR).getEstado());
+    }
+
     @Test
     void platoRequest_rechazaImagenEnBlanco() {
         PlatoRequest request = requestPara(EstadoPlato.BORRADOR, 1, List.of("   "));

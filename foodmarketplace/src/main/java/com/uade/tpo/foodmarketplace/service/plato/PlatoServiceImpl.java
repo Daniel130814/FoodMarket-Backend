@@ -175,6 +175,47 @@ public class PlatoServiceImpl implements PlatoService {
         return true;
     }
 
+    @Override
+    @Transactional
+    public Plato actualizarStock(Long platoId, Integer stockDisponible) {
+        if (stockDisponible == null || stockDisponible < 0) {
+            throw new BusinessRuleException("El stock no puede ser negativo");
+        }
+        Plato plato = obtenerPlatoPropio(platoId);
+        plato.setStockDisponible(stockDisponible);
+        // Mismo recálculo que PUT: BORRADOR y PAUSADO se respetan.
+        if (plato.getEstado() == EstadoPlato.PUBLICADO || plato.getEstado() == EstadoPlato.AGOTADO) {
+            plato.setEstado(stockDisponible == 0 ? EstadoPlato.AGOTADO : EstadoPlato.PUBLICADO);
+        }
+        return platoRepository.save(plato);
+    }
+
+    @Override
+    @Transactional
+    public Plato actualizarEstado(Long platoId, EstadoPlato estado) {
+        if (estado == null) {
+            throw new BusinessRuleException("El estado es obligatorio");
+        }
+        Plato plato = obtenerPlatoPropio(platoId);
+        if (estado == EstadoPlato.PUBLICADO || estado == EstadoPlato.AGOTADO) {
+            if (plato.getImagenesUrls().isEmpty()) {
+                throw new BusinessRuleException("Un plato publicado debe tener al menos una imagen");
+            }
+            plato.setEstado(plato.getStockDisponible() == 0 ? EstadoPlato.AGOTADO : EstadoPlato.PUBLICADO);
+        } else {
+            plato.setEstado(estado);
+        }
+        return platoRepository.save(plato);
+    }
+
+    /** Carga el plato y exige que lo opere su chef dueño o un ADMIN. */
+    private Plato obtenerPlatoPropio(Long platoId) {
+        Plato plato = platoRepository.findById(platoId).orElseThrow(PlatoNotFoundException::new);
+        authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(),
+                plato.getChef().getId());
+        return plato;
+    }
+
     /**
      * Actualiza el porcentaje de descuento del plato sin alterar el precio base
      * histórico.
