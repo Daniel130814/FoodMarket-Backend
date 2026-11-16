@@ -8,5 +8,7 @@ public record ResenaResponse(
         String comentario,
         LocalDateTime fechaCreacion,
         Long clienteId,
-        Long platoId) {
+        String clienteNombre,
+        Long platoId,
+        String platoNombre) {
 }

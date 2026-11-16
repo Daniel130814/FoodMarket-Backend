@@ -22,6 +22,7 @@ import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.entity.order.EstadoPedido;
 import com.uade.tpo.foodmarketplace.entity.plato.Plato;
 import com.uade.tpo.foodmarketplace.entity.resena.Resena;
+import com.uade.tpo.foodmarketplace.entity.user.Role;
 import com.uade.tpo.foodmarketplace.entity.user.User;
 import com.uade.tpo.foodmarketplace.exceptions.resena.ResenaDuplicateException;
 import com.uade.tpo.foodmarketplace.repository.order.DetallePedidoRepository;
@@ -142,6 +143,52 @@ class ResenaServiceImplTest {
                 () -> resenaService.createResena(5, "Concurrente", PLATO_ID));
 
         assertEquals(ResenaDuplicateException.MESSAGE, exception.getMessage());
+    }
+
+    @Test
+    void adminPuedeBorrarUnaResenaAjena() {
+        User admin = usuario(99L, Role.ADMIN);
+        Resena resena = resenaDe(cliente(1L));
+        when(resenaRepository.findById(10L)).thenReturn(Optional.of(resena));
+        when(authenticatedUserService.getCurrentUser()).thenReturn(admin);
+        usarReglasDeOwnership();
+
+        resenaService.deleteResena(10L);
+
+        verify(resenaRepository).delete(resena);
+    }
+
+    @Test
+    void clienteNoPuedeBorrarLaResenaDeOtro() {
+        Resena resena = resenaDe(cliente(1L));
+        when(resenaRepository.findById(10L)).thenReturn(Optional.of(resena));
+        when(authenticatedUserService.getCurrentUser()).thenReturn(usuario(2L, Role.CLIENTE));
+        usarReglasDeOwnership();
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> resenaService.deleteResena(10L));
+        verify(resenaRepository, never()).delete(any(Resena.class));
+    }
+
+    private void usarReglasDeOwnership() {
+        // El mock de AuthenticatedUserService ejecuta la logica real de ownership.
+        org.mockito.Mockito.doCallRealMethod().when(authenticatedUserService)
+                .requireOwnerOrAdmin(any(User.class), any(Long.class));
+        when(authenticatedUserService.isAdmin(any(User.class))).thenAnswer(
+                invocation -> ((User) invocation.getArgument(0)).getRole() == Role.ADMIN);
+    }
+
+    private User usuario(Long id, Role role) {
+        User user = cliente(id);
+        user.setRole(role);
+        return user;
+    }
+
+    private Resena resenaDe(User cliente) {
+        Resena resena = new Resena();
+        resena.setCliente(cliente);
+        resena.setPlato(plato());
+        return resena;
     }
 
     private void prepararCreacion(User cliente, Plato plato) {

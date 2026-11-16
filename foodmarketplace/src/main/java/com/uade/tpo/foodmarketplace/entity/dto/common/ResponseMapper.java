@@ -59,7 +59,19 @@ public final class ResponseMapper {
 
     public static ResenaResponse resena(Resena resena) {
         return new ResenaResponse(resena.getId(), resena.getCalificacion(), resena.getComentario(), resena.getFechaCreacion(),
-                resena.getCliente().getId(), resena.getPlato().getId());
+                resena.getCliente().getId(), nombreConInicial(resena.getCliente()),
+                resena.getPlato().getId(), resena.getPlato().getNombre());
+    }
+
+    /** Nombre y inicial del apellido ("Juan P."); el endpoint de reseñas es público. */
+    static String nombreConInicial(User user) {
+        String nombre = user.getNombre() == null ? "" : user.getNombre().trim();
+        String apellido = user.getApellido() == null ? "" : user.getApellido().trim();
+        if (apellido.isEmpty()) {
+            return nombre;
+        }
+        String inicial = apellido.substring(0, 1).toUpperCase(java.util.Locale.ROOT) + ".";
+        return nombre.isEmpty() ? inicial : nombre + " " + inicial;
     }
 
     public static ChefProfileResponse chefProfile(ChefProfile profile, BigDecimal reputacion) {
