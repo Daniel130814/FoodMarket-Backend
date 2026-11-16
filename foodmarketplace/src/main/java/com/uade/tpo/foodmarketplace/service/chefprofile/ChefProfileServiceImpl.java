@@ -53,6 +53,11 @@ public class ChefProfileServiceImpl implements ChefProfileService {
     }
 
     @Override
+    public Optional<ChefProfile> getChefProfileByUserId(Long userId) {
+        return chefProfileRepository.findByUserId(userId);
+    }
+
+    @Override
     public ChefProfile createChefProfile(ChefProfileRequest request) {
         User user = authenticatedUserService.getCurrentUser();
 

@@ -54,6 +54,14 @@ public class ChefProfilesController {
                 ResponseMapper.chefProfile(profile, chefProfileService.getReputacion(profile.getUser().getId()))));
     }
 
+    /** Perfil de un chef a partir del id de su usuario (público); 404 si todavía no creó su perfil. */
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<ApiResponse<ChefProfileResponse>> getChefProfileByUserId(@PathVariable Long userId) {
+        var profile = chefProfileService.getChefProfileByUserId(userId).orElseThrow(ChefProfileNotFoundException::new);
+        return ResponseEntity.ok(ApiResponse.ok("Perfil de chef obtenido correctamente",
+                ResponseMapper.chefProfile(profile, chefProfileService.getReputacion(userId))));
+    }
+
     @GetMapping("/user/{userId}/reputacion")
     public ResponseEntity<ApiResponse<BigDecimal>> reputacion(@PathVariable Long userId) {
         return ResponseEntity.ok(ApiResponse.ok("Reputación obtenida correctamente",

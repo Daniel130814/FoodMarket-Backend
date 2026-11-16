@@ -84,6 +84,20 @@ class ChefProfilesControllerTest {
         }
     }
 
+    @Test void perfilPorUserIdDevuelveElPerfilOLanzaNotFound() {
+        User user = new User();
+        user.setId(3L);
+        ChefProfile profile = new ChefProfile();
+        profile.setId(7L);
+        profile.setUser(user);
+        when(service.getChefProfileByUserId(3L)).thenReturn(Optional.of(profile));
+        when(service.getChefProfileByUserId(4L)).thenReturn(Optional.empty());
+        when(service.getReputacion(3L)).thenReturn(new BigDecimal("4.0"));
+
+        assertEquals(7L, controller.getChefProfileByUserId(3L).getBody().data().id());
+        assertThrows(ChefProfileNotFoundException.class, () -> controller.getChefProfileByUserId(4L));
+    }
+
     @Test void perfilInexistenteLanzaNotFoundDelDominio() {
         when(service.getChefProfileById(99L)).thenReturn(Optional.empty());
         assertThrows(ChefProfileNotFoundException.class, () -> controller.getChefProfile(99L));

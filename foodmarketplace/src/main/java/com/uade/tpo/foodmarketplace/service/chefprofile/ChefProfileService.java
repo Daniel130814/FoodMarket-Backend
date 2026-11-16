@@ -10,6 +10,9 @@ import com.uade.tpo.foodmarketplace.entity.dto.chefprofile.ChefProfileUpdateRequ
 public interface ChefProfileService {
     List<ChefProfile> getChefProfiles();
     Optional<ChefProfile> getChefProfileById(Long id);
+
+    /** Perfil del chef identificado por el id de su usuario. */
+    Optional<ChefProfile> getChefProfileByUserId(Long userId);
     ChefProfile createChefProfile(ChefProfileRequest request);
     /**
      * Actualiza los datos de presentación de un perfil de chef existente.
