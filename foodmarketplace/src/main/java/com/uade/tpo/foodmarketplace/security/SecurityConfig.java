@@ -85,6 +85,7 @@ public class SecurityConfig {
                         .requestMatchers("/domicilios/**", "/orders/**").hasAnyAuthority("CLIENTE", "ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/pagos/**").hasAuthority("ADMIN")
                         .requestMatchers("/pagos/**").hasAnyAuthority("CLIENTE", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/subpedidos/me").hasAuthority("CHEF")
                         .requestMatchers("/subpedidos/**").hasAnyAuthority("CHEF", "ADMIN")
                         .requestMatchers("/carrito/**", "/favoritos/**").hasAuthority("CLIENTE")
                         .anyRequest().authenticated())

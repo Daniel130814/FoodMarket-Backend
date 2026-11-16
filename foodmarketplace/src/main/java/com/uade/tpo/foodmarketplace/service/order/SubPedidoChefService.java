@@ -27,6 +27,11 @@ public interface SubPedidoChefService {
     List<SubPedidoChef> getSubPedidosByChefId(Long chefId);
 
     /**
+     * Lista los subpedidos del chef autenticado (atajo de getSubPedidosByChefId con el id propio).
+     */
+    List<SubPedidoChef> getMisSubPedidos();
+
+    /**
      * Cuenta los subpedidos del chef en estado PENDIENTE o CONFIRMADO (solo ese chef o ADMIN).
      */
     long contarPendientesByChefId(Long chefId);

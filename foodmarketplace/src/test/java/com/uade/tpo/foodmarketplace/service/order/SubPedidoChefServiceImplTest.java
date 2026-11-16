@@ -34,6 +34,30 @@ class SubPedidoChefServiceImplTest {
     @InjectMocks private SubPedidoChefServiceImpl subPedidoChefService;
 
     @Test
+    void misSubPedidosDevuelveLosDelChefAutenticado() {
+        User chef = new User();
+        chef.setId(20L);
+        chef.setRole(Role.CHEF);
+        SubPedidoChef sub = new SubPedidoChef();
+        when(authenticatedUserService.getCurrentUser()).thenReturn(chef);
+        when(subPedidoChefRepository.findByChefId(20L)).thenReturn(java.util.List.of(sub));
+
+        assertEquals(java.util.List.of(sub), subPedidoChefService.getMisSubPedidos());
+    }
+
+    @Test
+    void misSubPedidosRechazaAQuienNoEsChef() {
+        User admin = new User();
+        admin.setId(1L);
+        admin.setRole(Role.ADMIN);
+        when(authenticatedUserService.getCurrentUser()).thenReturn(admin);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                org.springframework.security.access.AccessDeniedException.class,
+                () -> subPedidoChefService.getMisSubPedidos());
+    }
+
+    @Test
     void cuentaPendientesYConfirmadosDelChefPropio() {
         User chef = new User();
         chef.setId(20L);

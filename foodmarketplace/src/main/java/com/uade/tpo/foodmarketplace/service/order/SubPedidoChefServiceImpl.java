@@ -17,7 +17,9 @@ import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
 import com.uade.tpo.foodmarketplace.repository.order.OrderRepository;
 import com.uade.tpo.foodmarketplace.repository.order.SubPedidoChefRepository;
 import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
+import com.uade.tpo.foodmarketplace.entity.user.Role;
 import com.uade.tpo.foodmarketplace.entity.user.User;
+import org.springframework.security.access.AccessDeniedException;
 import com.uade.tpo.foodmarketplace.security.AuthenticatedUserService;
 
 @Service
@@ -78,6 +80,15 @@ public class SubPedidoChefServiceImpl implements SubPedidoChefService {
         User currentUser = authenticatedUserService.getCurrentUser();
         authenticatedUserService.requireOwnerOrAdmin(currentUser, chefId);
         return subPedidoChefRepository.findByChefId(chefId);
+    }
+
+    @Override
+    public List<SubPedidoChef> getMisSubPedidos() {
+        User currentUser = authenticatedUserService.getCurrentUser();
+        if (currentUser.getRole() != Role.CHEF) {
+            throw new AccessDeniedException("Solo un CHEF puede consultar sus subpedidos");
+        }
+        return subPedidoChefRepository.findByChefId(currentUser.getId());
     }
 
     @Override

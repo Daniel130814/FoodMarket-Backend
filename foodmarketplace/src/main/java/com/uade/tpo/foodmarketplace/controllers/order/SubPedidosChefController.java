@@ -34,6 +34,19 @@ public class SubPedidosChefController {
     }
 
     /**
+     * Atajo para los subpedidos del chef autenticado; la ruta literal gana sobre /{id}.
+     */
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<List<SubPedidoChefResponse>>> getMisSubPedidos() {
+        List<SubPedidoChefResponse> subPedidos = subPedidoChefService.getMisSubPedidos().stream()
+                .map(ResponseMapper::subPedido)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.ok(subPedidos.isEmpty()
+                ? "No hay subpedidos disponibles para este chef"
+                : "Subpedidos del chef obtenidos correctamente", subPedidos.isEmpty() ? null : subPedidos));
+    }
+
+    /**
      * Devuelve un subpedido como DTO de respuesta sin referencias circulares de JPA.
      */
     @GetMapping("/{id}")
