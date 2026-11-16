@@ -28,12 +28,14 @@ Base URL: `http://localhost:4002`. Autenticación: `Authorization: Bearer <acces
 | `POST /resenas/**` / `PUT, DELETE /resenas/**` | CLIENTE / CLIENTE o ADMIN |
 | `/domicilios/**`, `/orders/**` | CLIENTE (POST) / CLIENTE o ADMIN |
 | `/pagos/**` | CLIENTE (POST), ADMIN (PATCH), CLIENTE o ADMIN (resto) |
-| `/subpedidos/**` | CHEF o ADMIN |
+| `GET /subpedidos/me` | CHEF |
+| `/subpedidos/**` (resto) | CHEF o ADMIN (ownership en servicio) |
 | `/carrito/**` | CLIENTE |
+| `/favoritos/**` | CLIENTE (CHEF y ADMIN reciben 403) |
 
 `POST /ingredientes` sigue siendo ADMIN; el CHEF crea ingredientes nuevos indicando `nombre` al armar el plato (ver abajo).
 
-Los endpoints no listados acá (auth, carrito, órdenes, pagos, reseñas, categorías, ingredientes, domicilios, chef-profiles, subpedidos) **no cambiaron**.
+Los endpoints no listados acá (auth, órdenes, pagos, categorías, ingredientes, domicilios) **no cambiaron**; los cambios de carrito, reseñas, chef-profiles y subpedidos están en "Cambios para el front".
 
 ---
 
@@ -113,13 +115,110 @@ Cada elemento de `ingredientes` acepta **exactamente una** de estas formas:
 - La respuesta (`PlatoResponse.ingredientes`: `ingredienteId`, `nombre`, `cantidad`, `unidadMedida`) no cambia; los clientes que mandan solo `ingredienteId` siguen funcionando igual.
 - Seguridad sin cambios: `POST/PUT/DELETE /ingredientes/**` siguen siendo ADMIN (el chef no renombra ni borra del catálogo); `DELETE /ingredientes/{id}` da `409` si lo usa algún plato; `GET /ingredientes` y `GET /ingredientes/{id}` son públicos (sirven para sugerir nombres).
 
-## `PlatoResponse` (sin cambios)
+## `PlatoResponse` (CAMBIO: se agrega `chefNombre`)
 
 ```json
 { "id": 1, "nombre": "", "descripcion": null, "imagenesUrls": ["http://localhost:4002/imagenes/<uuid>.png"],
   "precio": 10.00, "descuentoPorcentaje": 0.00, "precioConDescuento": 10.00, "stockDisponible": 5,
-  "estado": "BORRADOR|PUBLICADO|AGOTADO|PAUSADO", "chefId": 5, "categorias": [], "ingredientes": [] }
+  "estado": "BORRADOR|PUBLICADO|AGOTADO|PAUSADO", "chefId": 5, "chefNombre": "Ana Gómez",
+  "categorias": [], "ingredientes": [] }
 ```
+
+`chefNombre` = nombre y apellido del chef dueño (si no los cargó, su `username`). Aplica a `GET /platos`, `GET /platos/{id}`, `GET /platos/mis-platos`, `GET /favoritos` y a las respuestas de `POST`, `PUT` y `PATCH` de platos.
+
+---
+
+# Cambios para el front (entrega 30/11)
+
+## NUEVO — Favoritos (solo CLIENTE)
+
+Un cliente solo ve y toca sus propios favoritos. Único por (cliente, plato). Se borran solos si se borra el plato o el usuario.
+
+| Ruta | Éxito | Errores |
+|---|---|---|
+| `GET /favoritos` | `200`, `data: PlatoResponse[]` (más nuevo primero, solo platos `PUBLICADO`/`AGOTADO`). Sin favoritos: `200`, `message: "No tenés platos favoritos"`, `data: null` | `401`, `403` |
+| `POST /favoritos/{platoId}` | `201` + `Location: /favoritos/{platoId}`, `message: "Plato agregado a favoritos"`, `data: PlatoResponse` | `404` plato inexistente o no visible, `409 "El plato ya está en tus favoritos"`, `401`, `403` |
+| `DELETE /favoritos/{platoId}` | `200`, `message: "Plato quitado de favoritos"`, `data: null` | `404 "El plato no está en tus favoritos"`, `401`, `403` |
+
+Si un plato favorito pasa a `PAUSADO`/`BORRADOR`, deja de aparecer en `GET /favoritos` (el favorito se conserva y reaparece si vuelve a publicarse).
+
+## CAMBIO — Filtro de lenguaje ofensivo en reseñas
+
+`POST /resenas/createResena` y `PUT /resenas/{resenaId}` validan `comentario` (opcional: `null` o vacío no se valida). Si contiene lenguaje ofensivo: `400`, `message: "El comentario contiene lenguaje no permitido"` (no se informa cuál fue la palabra). La comparación ignora mayúsculas, tildes, símbolos/números típicos (`p3l0tud0`), letras repetidas (`pelotuuudo`) y separadores (`p.e.l.o.t.u.d.o`), y es por **palabra entera** (no bloquea "pijama"). La lista está en `src/main/resources/palabras-prohibidas-es.txt` (una palabra por línea, minúscula y sin tildes) y se edita sin tocar Java; **pendiente de revisión de Daniel**.
+
+## CAMBIO — `ResenaResponse`
+
+```json
+{ "id": 1, "calificacion": 5, "comentario": "Muy rico", "fechaCreacion": "2026-11-16T10:00:00",
+  "clienteId": 2, "clienteNombre": "Juan P.", "platoId": 5, "platoNombre": "Milanesa" }
+```
+
+`clienteNombre` = nombre + inicial del apellido (solo el nombre si no tiene apellido), por privacidad. Aplica a `GET /resenas`, `GET /resenas/{id}`, `GET /resenas/plato/{platoId}`, `GET /resenas/chef/{chefId}` y a las respuestas de `POST`/`PUT`. `DELETE /resenas/{id}` ya aceptaba ADMIN (probado en tests: ADMIN borra una reseña ajena, CLIENTE no puede borrar la de otro → `403`); la `reputacion` del chef se calcula en cada consulta como promedio de sus reseñas, así que queda al día tras el borrado.
+
+## NUEVO — `GET /resenas/chef/{chefId}` (público)
+
+Reseñas de todos los platos del chef, más nueva primero (`ResenaResponse[]`). Sin reseñas: `200`, `message: "Todavía no hay reseñas para este chef"`, `data: null`. `404 "El usuario indicado no existe"` si el id no existe o no es un CHEF.
+
+## CAMBIO — `GET /platos?chefId={id}`
+
+Nuevo filtro opcional, combinable con `nombre`, `categoriaId`, `precioMin` y `precioMax`. Un `chefId` sin platos visibles devuelve `200` con `data: null` (no `404`).
+
+## CAMBIO — Items del carrito (`ItemCarritoResponse`)
+
+Se agregan `imagenUrl` (primera imagen del plato o `null`), `stockDisponible` y `chefNombre`:
+
+```json
+{ "id": 4, "platoId": 3, "nombrePlato": "Milanesa", "cantidad": 2, "precioBase": 10.00,
+  "descuentoPorcentaje": 0.00, "precioUnitarioActual": 10.00, "subtotalEstimado": 20.00,
+  "imagenUrl": "http://localhost:4002/imagenes/a.png", "stockDisponible": 5, "chefNombre": "Ana Gómez" }
+```
+
+## CAMBIO — `SubPedidoChefResponse` (también dentro de `OrderResponse.subPedidos`)
+
+```json
+{ "id": 5, "pedidoId": 40, "fechaCreacion": "2026-11-01T12:00:00", "clienteNombre": "Juan Pérez",
+  "chefId": 2, "chefNombre": "Ana", "estado": "CONFIRMADO", "subtotal": 10.00, "detalles": [] }
+```
+
+`fechaCreacion` es la del pedido; `clienteNombre` = nombre y apellido del dueño del pedido. Solo lo ven el chef dueño, el ADMIN y el propio cliente (dentro de su pedido).
+
+## NUEVO — `PATCH /platos/{platoId}/stock` y `PATCH /platos/{platoId}/estado` (CHEF dueño o ADMIN)
+
+```json
+PATCH /platos/10/stock    { "stockDisponible": 20 }
+PATCH /platos/10/estado   { "estado": "PAUSADO" }
+```
+
+Ambos devuelven `200` con el `PlatoResponse` actualizado (`message: "Stock actualizado correctamente"` / `"Estado actualizado correctamente"`) y aplican las mismas reglas que `PUT /platos/{id}`:
+
+- Stock: `0` → `AGOTADO` y `> 0` → `PUBLICADO` solo si el plato estaba `PUBLICADO`/`AGOTADO`; `BORRADOR` y `PAUSADO` se respetan.
+- Estado: `PUBLICADO`/`AGOTADO` se resuelven por stock (`0` → `AGOTADO`, `> 0` → `PUBLICADO`) y exigen al menos una imagen (`400 "Un plato publicado debe tener al menos una imagen"`); `BORRADOR`/`PAUSADO` se aplican tal cual.
+- Errores: `400` stock negativo/nulo (`"stockDisponible: ..."`) o estado nulo/inválido · `401` · `403` si no es el dueño ni ADMIN · `404` plato inexistente.
+
+## CAMBIO — `ChefProfileResponse` y requests
+
+```json
+{ "id": 7, "userId": 3, "nombre": "Ana", "apellido": "Gómez", "biografia": "...", "especialidad": "Pastas",
+  "nacionalidad": "Argentina", "fotoUrl": null, "descripcion": "...", "reputacion": 4.50 }
+```
+
+`POST /chef-profiles` y `PUT /chef-profiles/{id}` aceptan `nacionalidad` (string opcional). Largos máximos: `especialidad` y `nacionalidad` 100; `biografia` y `descripcion` 2000 → `400` (`"especialidad: no puede superar los 100 caracteres"`).
+
+## NUEVO — `GET /subpedidos/chef/{chefId}/pendientes` (ese chef o ADMIN)
+
+`200`, `data: { "cantidad": 3 }` = subpedidos del chef en `PENDIENTE` o `CONFIRMADO`. Siempre devuelve el objeto (con `0` si no hay). `403` si es otro chef · `404` si el usuario no existe.
+
+## NUEVO — `GET /chef-profiles/user/{userId}` (público)
+
+Perfil por id de **usuario** (`ChefProfileResponse`). `404` si ese usuario no tiene perfil.
+
+## NUEVO — `GET /subpedidos/me` (CHEF)
+
+Atajo de `GET /subpedidos/chef/{miId}`: mismos `SubPedidoChefResponse[]`; sin subpedidos `200` con `data: null`. `403` si no es CHEF.
+
+## NUEVO — Datos semilla
+
+Al arrancar se crea lo que falte (idempotente): categorías base (Entradas, Platos principales, Pastas, Carnes, Vegetarianos, Postres, Bebidas), ingredientes base y un ADMIN inicial **solo** si están definidas `ADMIN_USERNAME` y `ADMIN_PASSWORD` (`ADMIN_EMAIL` opcional; por defecto `<username>@appetitos.local`). Se apaga con `SEED_ENABLED=false` (`app.seed.enabled`).
 
 ## CORS
 
@@ -132,6 +231,14 @@ Origen permitido por defecto `http://localhost:5173` (variable `CORS_ALLOWED_ORI
 | `IMAGENES_DIR` (`app.imagenes.dir`) | `uploads/imagenes` | carpeta en disco (relativa al directorio de arranque) |
 | `PUBLIC_BASE_URL` (`app.public-base-url`) | `http://localhost:4002` | prefijo de las URLs absolutas guardadas |
 | `spring.servlet.multipart.max-file-size` / `max-request-size` | `5MB` / `6MB` | límites multipart |
+| `SEED_ENABLED` (`app.seed.enabled`) | `true` | datos semilla al arrancar |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` / `ADMIN_EMAIL` | vacías | ADMIN inicial (sin usuario y contraseña no se crea) |
+
+## Lo que falta
+
+- Revisar la lista `palabras-prohibidas-es.txt` (es una propuesta inicial).
+- `GET /favoritos` oculta los platos no visibles pero conserva el favorito; no hay endpoint para limpiarlos.
+- Los tests HTTP que requieren Docker/MySQL (`FavoritosSecurityTest` y el resto de integración) no se pudieron correr en la máquina de desarrollo; se omiten solos sin Docker.
 
 ---
 
