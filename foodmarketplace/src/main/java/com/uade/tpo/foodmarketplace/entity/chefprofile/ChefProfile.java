@@ -28,6 +28,9 @@ public class ChefProfile {
     @Column
     private String especialidad;
 
+    @Column(length = 100)
+    private String nacionalidad;
+
     @Column
     private String fotoUrl;
 

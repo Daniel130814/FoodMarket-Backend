@@ -68,6 +68,7 @@ public class ChefProfileServiceImpl implements ChefProfileService {
         profile.setUser(user);
         profile.setBiografia(request.getBiografia());
         profile.setEspecialidad(request.getEspecialidad());
+        profile.setNacionalidad(request.getNacionalidad());
         profile.setFotoUrl(request.getFotoUrl());
         profile.setDescripcion(request.getDescripcion());
 
@@ -91,6 +92,7 @@ public class ChefProfileServiceImpl implements ChefProfileService {
 
         profile.setBiografia(request.getBiografia());
         profile.setEspecialidad(request.getEspecialidad());
+        profile.setNacionalidad(request.getNacionalidad());
         profile.setFotoUrl(request.getFotoUrl());
         profile.setDescripcion(request.getDescripcion());
         return chefProfileRepository.save(profile);

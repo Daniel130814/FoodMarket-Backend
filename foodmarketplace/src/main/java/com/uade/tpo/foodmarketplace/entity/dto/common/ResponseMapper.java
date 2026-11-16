@@ -86,8 +86,9 @@ public final class ResponseMapper {
     }
 
     public static ChefProfileResponse chefProfile(ChefProfile profile, BigDecimal reputacion) {
-        return new ChefProfileResponse(profile.getId(), profile.getUser().getId(), profile.getBiografia(), profile.getEspecialidad(),
-                profile.getFotoUrl(), profile.getDescripcion(), reputacion);
+        return new ChefProfileResponse(profile.getId(), profile.getUser().getId(), profile.getUser().getNombre(),
+                profile.getUser().getApellido(), profile.getBiografia(), profile.getEspecialidad(),
+                profile.getNacionalidad(), profile.getFotoUrl(), profile.getDescripcion(), reputacion);
     }
 
     /**
