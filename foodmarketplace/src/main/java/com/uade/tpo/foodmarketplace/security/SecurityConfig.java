@@ -86,7 +86,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/pagos/**").hasAuthority("ADMIN")
                         .requestMatchers("/pagos/**").hasAnyAuthority("CLIENTE", "ADMIN")
                         .requestMatchers("/subpedidos/**").hasAnyAuthority("CHEF", "ADMIN")
-                        .requestMatchers("/carrito/**").hasAuthority("CLIENTE")
+                        .requestMatchers("/carrito/**", "/favoritos/**").hasAuthority("CLIENTE")
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

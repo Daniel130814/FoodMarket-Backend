@@ -15,6 +15,8 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import com.uade.tpo.foodmarketplace.exceptions.plato.ImagenNotFoundException;
+import com.uade.tpo.foodmarketplace.exceptions.favorito.FavoritoDuplicateException;
+import com.uade.tpo.foodmarketplace.exceptions.favorito.FavoritoNotFoundException;
 
 import com.uade.tpo.foodmarketplace.exceptions.common.BusinessRuleException;
 import com.uade.tpo.foodmarketplace.exceptions.common.ResourceInUseException;
@@ -56,7 +58,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({ ResenaDuplicateException.class, ResourceInUseException.class, InvalidOrderStateException.class,
             InvalidSubPedidoStateException.class, InvalidPagoStateException.class, OrderCancelledException.class,
-            CarritoIntegrityConflictException.class, CategoryDuplicateException.class, IngredienteDuplicateException.class })
+            CarritoIntegrityConflictException.class, CategoryDuplicateException.class, IngredienteDuplicateException.class,
+            FavoritoDuplicateException.class })
     ResponseEntity<ApiResponse<Void>> conflict(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
@@ -65,7 +68,7 @@ public class GlobalExceptionHandler {
             PagoNotFoundException.class, DomicilioNotFoundException.class, IngredienteNotFoundException.class,
             CategoryNotFoundException.class, ResenaNotFoundException.class, ChefProfileNotFoundException.class,
             SubPedidoNotFoundException.class, ItemCarritoNotFoundException.class,
-            ImagenNotFoundException.class })
+            ImagenNotFoundException.class, FavoritoNotFoundException.class })
     ResponseEntity<ApiResponse<Void>> notFound(RuntimeException ex, WebRequest request) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
