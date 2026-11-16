@@ -41,11 +41,12 @@ public class PlatosController {
             @RequestParam(name = "nombre", required = false) String nombre,
             @RequestParam(name = "categoriaId", required = false) Long categoriaId,
             @RequestParam(name = "precioMin", required = false) BigDecimal precioMin,
-            @RequestParam(name = "precioMax", required = false) BigDecimal precioMax) {
-        List<PlatoResponse> platos = platoService.getPlatos(nombre, categoriaId, precioMin, precioMax).stream()
-                .map(ResponseMapper::plato).toList();
+            @RequestParam(name = "precioMax", required = false) BigDecimal precioMax,
+            @RequestParam(name = "chefId", required = false) Long chefId) {
+        List<PlatoResponse> platos = platoService.getPlatos(nombre, categoriaId, precioMin, precioMax, chefId)
+                .stream().map(ResponseMapper::plato).toList();
         boolean hayFiltros = (nombre != null && !nombre.isBlank()) || categoriaId != null || precioMin != null
-                || precioMax != null;
+                || precioMax != null || chefId != null;
         String message = platos.isEmpty()
                 ? (hayFiltros ? "No se encontraron platos con los filtros indicados" : "No se encontraron platos disponibles")
                 : "Platos obtenidos correctamente";

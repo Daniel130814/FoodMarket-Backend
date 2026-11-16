@@ -14,6 +14,9 @@ public interface ResenaService {
 
     List<Resena> getResenasByPlatoId(Long platoId);
 
+    /** Reseñas de todos los platos de un chef; falla con UserNotFoundException si el chef no existe. */
+    List<Resena> getResenasByChefId(Long chefId);
+
     Resena createResena(Integer calificacion, String comentario, Long platoId);
 
     /**

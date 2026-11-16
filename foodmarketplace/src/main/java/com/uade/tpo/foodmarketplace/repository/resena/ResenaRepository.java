@@ -10,6 +10,9 @@ public interface ResenaRepository extends JpaRepository<Resena, Long> {
 
     List<Resena> findByPlatoId(Long platoId);
 
+    /** Reseñas de todos los platos de un chef, de la más nueva a la más vieja. */
+    List<Resena> findByPlatoChefIdOrderByFechaCreacionDescIdDesc(Long chefId);
+
     boolean existsByClienteIdAndPlatoId(Long clienteId, Long platoId);
 
     /**

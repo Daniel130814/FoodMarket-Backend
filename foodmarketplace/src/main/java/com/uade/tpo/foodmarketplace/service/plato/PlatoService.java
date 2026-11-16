@@ -9,7 +9,7 @@ import com.uade.tpo.foodmarketplace.entity.dto.plato.PlatoRequest;
 
 public interface PlatoService {
 
-    List<Plato> getPlatos(String nombre, Long categoriaId, BigDecimal precioMin, BigDecimal precioMax);
+    List<Plato> getPlatos(String nombre, Long categoriaId, BigDecimal precioMin, BigDecimal precioMax, Long chefId);
 
     /**
      * Devuelve platos públicos; BORRADOR y PAUSADO solo si el usuario autenticado es el chef dueño o ADMIN.

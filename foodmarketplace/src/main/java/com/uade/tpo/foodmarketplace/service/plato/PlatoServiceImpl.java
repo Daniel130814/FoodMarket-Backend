@@ -71,11 +71,12 @@ public class PlatoServiceImpl implements PlatoService {
     private ImagenStorageService imagenStorageService;
 
     @Override
-    public List<Plato> getPlatos(String nombre, Long categoriaId, BigDecimal precioMin, BigDecimal precioMax) {
+    public List<Plato> getPlatos(String nombre, Long categoriaId, BigDecimal precioMin, BigDecimal precioMax,
+            Long chefId) {
         validarFiltros(categoriaId, precioMin, precioMax);
         String nombreNormalizado = nombre == null || nombre.isBlank() ? null : nombre.trim();
         return platoRepository.buscarConFiltros(
-                ESTADOS_PUBLICOS, nombreNormalizado, categoriaId, precioMin, precioMax);
+                ESTADOS_PUBLICOS, nombreNormalizado, categoriaId, precioMin, precioMax, chefId);
     }
 
     @Override

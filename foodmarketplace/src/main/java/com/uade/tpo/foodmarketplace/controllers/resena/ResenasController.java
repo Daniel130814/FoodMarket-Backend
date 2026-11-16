@@ -51,6 +51,16 @@ public class ResenasController {
         return ResponseEntity.ok(ApiResponse.ok(message, resenas.isEmpty() ? null : resenas));
     }
 
+    /** Reseñas de todos los platos de un chef (perfil público del chef). */
+    @GetMapping("/chef/{chefId}")
+    public ResponseEntity<ApiResponse<List<ResenaResponse>>> getResenasByChefId(@PathVariable("chefId") Long chefId) {
+        List<ResenaResponse> resenas = resenaService.getResenasByChefId(chefId).stream()
+                .map(ResponseMapper::resena).toList();
+        String message = resenas.isEmpty() ? "Todavía no hay reseñas para este chef"
+                : "Reseñas obtenidas correctamente";
+        return ResponseEntity.ok(ApiResponse.ok(message, resenas.isEmpty() ? null : resenas));
+    }
+
     @PostMapping("createResena")
     public ResponseEntity<ApiResponse<ResenaResponse>> createResena(@Valid @RequestBody ResenaRequest resenaRequest) {
         var result = resenaService.createResena(

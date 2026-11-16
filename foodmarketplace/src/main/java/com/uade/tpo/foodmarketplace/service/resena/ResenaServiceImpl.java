@@ -12,7 +12,10 @@ import com.uade.tpo.foodmarketplace.entity.resena.Resena;
 import com.uade.tpo.foodmarketplace.entity.dto.resena.ResenaUpdateRequest;
 import com.uade.tpo.foodmarketplace.entity.order.EstadoPedido;
 import com.uade.tpo.foodmarketplace.entity.plato.Plato;
+import com.uade.tpo.foodmarketplace.entity.user.Role;
 import com.uade.tpo.foodmarketplace.entity.user.User;
+import com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException;
+import com.uade.tpo.foodmarketplace.repository.user.UserRepository;
 import com.uade.tpo.foodmarketplace.exceptions.resena.CalificacionInvalidaException;
 import com.uade.tpo.foodmarketplace.exceptions.plato.PlatoNotFoundException;
 import com.uade.tpo.foodmarketplace.exceptions.resena.ResenaDuplicateException;
@@ -41,6 +44,9 @@ public class ResenaServiceImpl implements ResenaService {
     @Autowired
     private FiltroLenguaOfensivo filtroLenguaOfensivo;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Override
     public List<Resena> getResenas() {
         return resenaRepository.findAll();
@@ -58,6 +64,15 @@ public class ResenaServiceImpl implements ResenaService {
         }
 
         return resenaRepository.findByPlatoId(platoId);
+    }
+
+    @Override
+    public List<Resena> getResenasByChefId(Long chefId) {
+        boolean esChef = userRepository.findById(chefId).map(u -> u.getRole() == Role.CHEF).orElse(false);
+        if (!esChef) {
+            throw new UserNotFoundException();
+        }
+        return resenaRepository.findByPlatoChefIdOrderByFechaCreacionDescIdDesc(chefId);
     }
 
     @Override

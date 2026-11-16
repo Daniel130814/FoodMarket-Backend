@@ -33,13 +33,15 @@ public interface PlatoRepository extends JpaRepository<Plato, Long> {
               and (:categoriaId is null or c.id = :categoriaId)
               and (:precioMin is null or p.precio >= :precioMin)
               and (:precioMax is null or p.precio <= :precioMax)
+              and (:chefId is null or p.chef.id = :chefId)
             """)
     List<Plato> buscarConFiltros(
             @Param("estados") List<EstadoPlato> estados,
             @Param("nombre") String nombre,
             @Param("categoriaId") Long categoriaId,
             @Param("precioMin") BigDecimal precioMin,
-            @Param("precioMax") BigDecimal precioMax);
+            @Param("precioMax") BigDecimal precioMax,
+            @Param("chefId") Long chefId);
 
     /**
      * Indica si una categoría está asignada a al menos un plato.

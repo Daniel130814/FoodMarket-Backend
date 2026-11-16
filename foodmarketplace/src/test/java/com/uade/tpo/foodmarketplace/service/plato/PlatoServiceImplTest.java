@@ -84,12 +84,20 @@ class PlatoServiceImplTest {
         Plato agotado = new Plato();
         agotado.setEstado(EstadoPlato.AGOTADO);
         List<Plato> platos = List.of(publicado, agotado);
-        when(platoRepository.buscarConFiltros(ESTADOS_PUBLICOS, null, null, null, null))
+        when(platoRepository.buscarConFiltros(ESTADOS_PUBLICOS, null, null, null, null, null))
                 .thenReturn(platos);
 
-        assertSame(platos, platoService.getPlatos(null, null, null, null));
+        assertSame(platos, platoService.getPlatos(null, null, null, null, null));
 
-        verify(platoRepository).buscarConFiltros(ESTADOS_PUBLICOS, null, null, null, null);
+        verify(platoRepository).buscarConFiltros(ESTADOS_PUBLICOS, null, null, null, null, null);
+    }
+
+    @Test
+    void filtraPlatosPorChefId() {
+        List<Plato> platos = List.of(new Plato());
+        when(platoRepository.buscarConFiltros(ESTADOS_PUBLICOS, null, null, null, null, 9L)).thenReturn(platos);
+
+        assertSame(platos, platoService.getPlatos(null, null, null, null, 9L));
     }
 
     @Test
@@ -98,12 +106,12 @@ class PlatoServiceImplTest {
         BigDecimal precioMax = new BigDecimal("12000");
         List<Plato> platos = List.of(new Plato());
         when(categoryRepository.existsById(2L)).thenReturn(true);
-        when(platoRepository.buscarConFiltros(ESTADOS_PUBLICOS, "pollo", 2L, precioMin, precioMax))
+        when(platoRepository.buscarConFiltros(ESTADOS_PUBLICOS, "pollo", 2L, precioMin, precioMax, null))
                 .thenReturn(platos);
 
-        assertSame(platos, platoService.getPlatos("  pollo  ", 2L, precioMin, precioMax));
+        assertSame(platos, platoService.getPlatos("  pollo  ", 2L, precioMin, precioMax, null));
 
-        verify(platoRepository).buscarConFiltros(ESTADOS_PUBLICOS, "pollo", 2L, precioMin, precioMax);
+        verify(platoRepository).buscarConFiltros(ESTADOS_PUBLICOS, "pollo", 2L, precioMin, precioMax, null);
     }
 
     @Test
@@ -154,7 +162,7 @@ class PlatoServiceImplTest {
     @Test
     void getPlatos_rechazaPrecioMinimoNegativo() {
         assertThrows(BusinessRuleException.class,
-                () -> platoService.getPlatos(null, null, new BigDecimal("-1"), null));
+                () -> platoService.getPlatos(null, null, new BigDecimal("-1"), null, null));
 
         verifyNoInteractions(platoRepository, categoryRepository);
     }
@@ -162,7 +170,7 @@ class PlatoServiceImplTest {
     @Test
     void getPlatos_rechazaPrecioMaximoNegativo() {
         assertThrows(BusinessRuleException.class,
-                () -> platoService.getPlatos(null, null, null, new BigDecimal("-1")));
+                () -> platoService.getPlatos(null, null, null, new BigDecimal("-1"), null));
 
         verifyNoInteractions(platoRepository, categoryRepository);
     }
@@ -170,7 +178,7 @@ class PlatoServiceImplTest {
     @Test
     void getPlatos_rechazaRangoInvertido() {
         assertThrows(BusinessRuleException.class,
-                () -> platoService.getPlatos(null, null, new BigDecimal("12000"), new BigDecimal("5000")));
+                () -> platoService.getPlatos(null, null, new BigDecimal("12000"), new BigDecimal("5000"), null));
 
         verifyNoInteractions(platoRepository, categoryRepository);
     }
@@ -180,7 +188,7 @@ class PlatoServiceImplTest {
         when(categoryRepository.existsById(99L)).thenReturn(false);
 
         assertThrows(CategoryNotFoundException.class,
-                () -> platoService.getPlatos(null, 99L, null, null));
+                () -> platoService.getPlatos(null, 99L, null, null, null));
 
         verifyNoInteractions(platoRepository);
     }

@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -143,6 +144,30 @@ class ResenaServiceImplTest {
                 () -> resenaService.createResena(5, "Concurrente", PLATO_ID));
 
         assertEquals(ResenaDuplicateException.MESSAGE, exception.getMessage());
+    }
+
+    @Mock
+    private com.uade.tpo.foodmarketplace.repository.user.UserRepository userRepository;
+
+    @Test
+    void devuelveLasResenasDeLosPlatosDeUnChef() {
+        User chef = usuario(7L, Role.CHEF);
+        List<Resena> resenas = List.of(resenaDe(cliente(1L)));
+        when(userRepository.findById(7L)).thenReturn(Optional.of(chef));
+        when(resenaRepository.findByPlatoChefIdOrderByFechaCreacionDescIdDesc(7L)).thenReturn(resenas);
+
+        assertSame(resenas, resenaService.getResenasByChefId(7L));
+    }
+
+    @Test
+    void resenasDeUnChefInexistenteODeUnNoChefDanNotFound() {
+        when(userRepository.findById(7L)).thenReturn(Optional.empty());
+        when(userRepository.findById(8L)).thenReturn(Optional.of(usuario(8L, Role.CLIENTE)));
+
+        assertThrows(com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException.class,
+                () -> resenaService.getResenasByChefId(7L));
+        assertThrows(com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException.class,
+                () -> resenaService.getResenasByChefId(8L));
     }
 
     @Test
