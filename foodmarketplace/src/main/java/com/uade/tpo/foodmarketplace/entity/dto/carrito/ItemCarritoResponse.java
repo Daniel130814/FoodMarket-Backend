@@ -4,5 +4,5 @@ import java.math.BigDecimal;
 
 public record ItemCarritoResponse(Long id, Long platoId, String nombrePlato, Integer cantidad,
         BigDecimal precioBase, BigDecimal descuentoPorcentaje, BigDecimal precioUnitarioActual,
-        BigDecimal subtotalEstimado) {
+        BigDecimal subtotalEstimado, String imagenUrl, Integer stockDisponible, String chefNombre) {
 }

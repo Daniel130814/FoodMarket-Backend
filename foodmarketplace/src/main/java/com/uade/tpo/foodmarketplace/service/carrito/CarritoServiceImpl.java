@@ -233,6 +233,8 @@ public class CarritoServiceImpl implements CarritoService {
         Plato plato = item.getPlato();
         BigDecimal precioActual = PrecioPlatoCalculator.precioEfectivo(plato);
         return new ItemCarritoResponse(item.getId(), plato.getId(), plato.getNombre(), item.getCantidad(), plato.getPrecio(),
-                plato.getDescuentoPorcentaje(), precioActual, precioActual.multiply(BigDecimal.valueOf(item.getCantidad())));
+                plato.getDescuentoPorcentaje(), precioActual, precioActual.multiply(BigDecimal.valueOf(item.getCantidad())),
+                plato.getImagenesUrls().isEmpty() ? null : plato.getImagenesUrls().get(0),
+                plato.getStockDisponible(), ResponseMapper.nombreCompleto(plato.getChef()));
     }
 }

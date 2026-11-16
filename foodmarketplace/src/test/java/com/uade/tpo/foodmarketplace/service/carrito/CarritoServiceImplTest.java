@@ -162,6 +162,39 @@ class CarritoServiceImplTest {
         plato.setStockDisponible(5);
         plato.setPrecio(BigDecimal.TEN);
         plato.setDescuentoPorcentaje(BigDecimal.ZERO);
+        User chef = new User();
+        chef.setId(8L);
+        chef.setNombre("Ana");
+        chef.setApellido("Gómez");
+        plato.setChef(chef);
         return plato;
+    }
+
+    @Test
+    void itemDelCarritoIncluyeImagenStockYChef() {
+        User cliente = cliente();
+        Carrito carrito = carrito(cliente);
+        Plato plato = plato();
+        plato.getImagenesUrls().add("http://localhost:4002/imagenes/a.png");
+        plato.getImagenesUrls().add("http://localhost:4002/imagenes/b.png");
+        AtomicReference<ItemCarrito> itemCreado = new AtomicReference<>();
+        when(authenticatedUserService.getCurrentUser()).thenReturn(cliente);
+        when(carritoRepository.findByClienteId(CLIENTE_ID)).thenReturn(Optional.of(carrito));
+        when(carritoRepository.findByClienteIdForUpdate(CLIENTE_ID)).thenReturn(Optional.of(carrito));
+        when(platoRepository.findById(PLATO_ID)).thenReturn(Optional.of(plato));
+        when(itemCarritoRepository.findByCarritoIdAndPlatoIdForUpdate(CARRITO_ID, PLATO_ID))
+                .thenAnswer(invocation -> Optional.ofNullable(itemCreado.get()));
+        when(itemCarritoRepository.saveAndFlush(any(ItemCarrito.class))).thenAnswer(invocation -> {
+            ItemCarrito guardado = invocation.getArgument(0);
+            guardado.setId(4L);
+            itemCreado.set(guardado);
+            return guardado;
+        });
+
+        var item = carritoService.agregarItem(new AddItemCarritoRequest(PLATO_ID, 1)).items().get(0);
+
+        assertEquals("http://localhost:4002/imagenes/a.png", item.imagenUrl());
+        assertEquals(5, item.stockDisponible());
+        assertEquals("Ana Gómez", item.chefNombre());
     }
 }
