@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ResponseMapper;
 import com.uade.tpo.foodmarketplace.entity.dto.common.ApiResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.order.EstadoSubPedidoRequest;
+import com.uade.tpo.foodmarketplace.entity.dto.order.PendientesChefResponse;
 import com.uade.tpo.foodmarketplace.entity.dto.order.SubPedidoChefResponse;
 import com.uade.tpo.foodmarketplace.service.order.SubPedidoChefService;
 import com.uade.tpo.foodmarketplace.exceptions.order.SubPedidoNotFoundException;
@@ -66,6 +67,15 @@ public class SubPedidosChefController {
         return ResponseEntity.ok(ApiResponse.ok(subPedidos.isEmpty()
                 ? "No hay subpedidos disponibles para este chef"
                 : "Subpedidos del chef obtenidos correctamente", subPedidos.isEmpty() ? null : subPedidos));
+    }
+
+    /**
+     * Cantidad de subpedidos del chef en PENDIENTE o CONFIRMADO; siempre devuelve el objeto (con 0 si no hay).
+     */
+    @GetMapping("/chef/{chefId}/pendientes")
+    public ResponseEntity<ApiResponse<PendientesChefResponse>> getPendientes(@PathVariable Long chefId) {
+        return ResponseEntity.ok(ApiResponse.ok("Pedidos pendientes obtenidos correctamente",
+                new PendientesChefResponse(subPedidoChefService.contarPendientesByChefId(chefId))));
     }
 
     /**

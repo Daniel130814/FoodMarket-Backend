@@ -34,6 +34,43 @@ class SubPedidoChefServiceImplTest {
     @InjectMocks private SubPedidoChefServiceImpl subPedidoChefService;
 
     @Test
+    void cuentaPendientesYConfirmadosDelChefPropio() {
+        User chef = new User();
+        chef.setId(20L);
+        chef.setRole(Role.CHEF);
+        when(userRepository.existsById(20L)).thenReturn(true);
+        when(authenticatedUserService.getCurrentUser()).thenReturn(chef);
+        when(subPedidoChefRepository.countByChefIdAndEstadoIn(20L,
+                java.util.List.of(EstadoPedido.PENDIENTE, EstadoPedido.CONFIRMADO))).thenReturn(3L);
+
+        assertEquals(3L, subPedidoChefService.contarPendientesByChefId(20L));
+        org.mockito.Mockito.verify(authenticatedUserService).requireOwnerOrAdmin(chef, 20L);
+    }
+
+    @Test
+    void contarPendientesDeUnChefInexistenteDaNotFound() {
+        when(userRepository.existsById(99L)).thenReturn(false);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                com.uade.tpo.foodmarketplace.exceptions.user.UserNotFoundException.class,
+                () -> subPedidoChefService.contarPendientesByChefId(99L));
+    }
+
+    @Test
+    void contarPendientesDeOtroChefLanzaAccessDenied() {
+        User otro = new User();
+        otro.setId(5L);
+        when(userRepository.existsById(20L)).thenReturn(true);
+        when(authenticatedUserService.getCurrentUser()).thenReturn(otro);
+        org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException("no"))
+                .when(authenticatedUserService).requireOwnerOrAdmin(otro, 20L);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                org.springframework.security.access.AccessDeniedException.class,
+                () -> subPedidoChefService.contarPendientesByChefId(20L));
+    }
+
+    @Test
     void bloqueaLaOrderAntesDeModificarYRecalcularElSubPedido() {
         User chef = new User();
         chef.setId(20L);

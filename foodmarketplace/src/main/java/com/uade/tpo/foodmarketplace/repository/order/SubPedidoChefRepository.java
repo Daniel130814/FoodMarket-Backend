@@ -24,6 +24,9 @@ public interface SubPedidoChefRepository extends JpaRepository<SubPedidoChef, Lo
 
     List<SubPedidoChef> findByPedidoIdAndChefId(Long pedidoId, Long chefId);
 
+    /** Cuenta los subpedidos de un chef en los estados indicados. */
+    long countByChefIdAndEstadoIn(Long chefId, List<EstadoPedido> estados);
+
     /**
      * Obtiene los subpedidos asignados a un chef específico.
      */

@@ -80,6 +80,16 @@ public class SubPedidoChefServiceImpl implements SubPedidoChefService {
         return subPedidoChefRepository.findByChefId(chefId);
     }
 
+    @Override
+    public long contarPendientesByChefId(Long chefId) {
+        if (!userRepository.existsById(chefId)) {
+            throw new UserNotFoundException();
+        }
+        authenticatedUserService.requireOwnerOrAdmin(authenticatedUserService.getCurrentUser(), chefId);
+        return subPedidoChefRepository.countByChefIdAndEstadoIn(chefId,
+                List.of(EstadoPedido.PENDIENTE, EstadoPedido.CONFIRMADO));
+    }
+
     /**
      * Actualiza el estado de un subpedido y luego recalcula el estado de su orden padre.
      */

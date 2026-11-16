@@ -27,6 +27,11 @@ public interface SubPedidoChefService {
     List<SubPedidoChef> getSubPedidosByChefId(Long chefId);
 
     /**
+     * Cuenta los subpedidos del chef en estado PENDIENTE o CONFIRMADO (solo ese chef o ADMIN).
+     */
+    long contarPendientesByChefId(Long chefId);
+
+    /**
      * Cambia el estado de un subpedido tras validar la secuencia permitida.
      */
     SubPedidoChef actualizarEstado(Long subPedidoId, EstadoPedido nuevoEstado);
