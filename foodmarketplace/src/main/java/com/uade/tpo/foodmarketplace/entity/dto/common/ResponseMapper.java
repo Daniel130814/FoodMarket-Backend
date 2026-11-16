@@ -31,6 +31,7 @@ public final class ResponseMapper {
         return new PlatoResponse(plato.getId(), plato.getNombre(), plato.getDescripcion(),
                 plato.getImagenesUrls().stream().toList(), plato.getPrecio(),
                 plato.getDescuentoPorcentaje(), PrecioPlatoCalculator.precioEfectivo(plato), plato.getStockDisponible(), plato.getEstado(), plato.getChef().getId(),
+                nombreCompleto(plato.getChef()),
                 plato.getCategorias().stream().map(Category::getDescription).toList(),
                 plato.getIngredientes().stream().map(i -> new IngredientePlatoResponse(i.getIngrediente().getId(),
                         i.getIngrediente().getNombre(), i.getCantidad(), i.getUnidadMedida())).toList());
@@ -61,6 +62,14 @@ public final class ResponseMapper {
         return new ResenaResponse(resena.getId(), resena.getCalificacion(), resena.getComentario(), resena.getFechaCreacion(),
                 resena.getCliente().getId(), nombreConInicial(resena.getCliente()),
                 resena.getPlato().getId(), resena.getPlato().getNombre());
+    }
+
+    /** Nombre y apellido; si el usuario no los cargó, cae al username. */
+    public static String nombreCompleto(User user) {
+        String nombre = user.getNombre() == null ? "" : user.getNombre().trim();
+        String apellido = user.getApellido() == null ? "" : user.getApellido().trim();
+        String completo = (nombre + " " + apellido).trim();
+        return completo.isEmpty() ? user.getUsername() : completo;
     }
 
     /** Nombre y inicial del apellido ("Juan P."); el endpoint de reseñas es público. */

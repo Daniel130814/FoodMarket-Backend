@@ -27,6 +27,30 @@ class ResponseMapperResenaTest {
         assertEquals("Juan", ResponseMapper.resena(resena("Juan", "  ", "Milanesa")).clienteNombre());
     }
 
+    @Test
+    void platoIncluyeChefNombreConNombreYApellido() {
+        User chef = new User();
+        chef.setId(3L);
+        chef.setNombre("Ana");
+        chef.setApellido("Gómez");
+        Plato plato = new Plato();
+        plato.setId(5L);
+        plato.setNombre("Milanesa");
+        plato.setChef(chef);
+        plato.setPrecio(java.math.BigDecimal.TEN);
+        plato.setStockDisponible(1);
+
+        assertEquals("Ana Gómez", ResponseMapper.plato(plato).chefNombre());
+    }
+
+    @Test
+    void chefSinNombreCaeAlUsername() {
+        User chef = new User();
+        chef.setUsername("chef01");
+
+        assertEquals("chef01", ResponseMapper.nombreCompleto(chef));
+    }
+
     private Resena resena(String nombre, String apellido, String platoNombre) {
         User cliente = new User();
         cliente.setId(2L);

@@ -15,6 +15,7 @@ public record PlatoResponse(
         Integer stockDisponible,
         EstadoPlato estado,
         Long chefId,
+        String chefNombre,
         List<String> categorias,
         List<IngredientePlatoResponse> ingredientes) {
 }
